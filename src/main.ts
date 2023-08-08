@@ -53,8 +53,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  console.log(port);
-
   await app.listen(Number(port));
 }
 bootstrap();
