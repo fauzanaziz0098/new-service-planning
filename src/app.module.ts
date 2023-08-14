@@ -9,6 +9,10 @@ import { RoleModule } from './role/role.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ClientModule } from './client/client.module';
+import { ProductModule } from './product/product.module';
+import { MachineModule } from './machine/machine.module';
+import { ShiftModule } from './shift/shift.module';
+import { NoPlanMachineModule } from './no-plan-machine/no-plan-machine.module';
 
 @Module({
   imports: [
@@ -44,6 +48,10 @@ import { ClientModule } from './client/client.module';
     RoleModule,
     UserModule,
     ClientModule,
+    ProductModule,
+    MachineModule,
+    ShiftModule,
+    NoPlanMachineModule,
   ],
   controllers: [AppController],
   providers: [AppService],
