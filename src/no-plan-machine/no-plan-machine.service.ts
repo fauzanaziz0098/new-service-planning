@@ -25,9 +25,6 @@ export class NoPlanMachineService {
     const shift = await this.shiftService.findOne(
       +createNoPlanMachineDto.shift,
     );
-    const existNoPlan = await this.noPlanMachineRepository.findOne({
-      where: { id: +createNoPlanMachineDto.shift },
-    });
     const timeStart = await this.convertTime(shift.time_start);
     const timeEnd = await this.convertTime(shift.time_end);
 
@@ -53,19 +50,74 @@ export class NoPlanMachineService {
   }
 
   findAll() {
-    return `This action returns all noPlanMachine`;
+    return this.noPlanMachineRepository.find({ relations: ['shift'] });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} noPlanMachine`;
+  async findOne(id: number) {
+    const noPlanMachine = await this.noPlanMachineRepository.findOne({
+      where: { id: id },
+      relations: ['shift'],
+    });
+    if (noPlanMachine) {
+      return noPlanMachine;
+    }
+    throw new HttpException('No Plan Machine Not Found', HttpStatus.NOT_FOUND);
   }
 
-  update(id: number, updateNoPlanMachineDto: UpdateNoPlanMachineDto) {
-    return `This action updates a #${id} noPlanMachine`;
+  async update(id: number, updateNoPlanMachineDto: UpdateNoPlanMachineDto) {
+    const noPlanMachine = await this.noPlanMachineRepository.findOne({
+      where: { id: id },
+      relations: ['shift'],
+    });
+    const shift = await this.shiftService.findOne(
+      +updateNoPlanMachineDto.shift
+        ? +updateNoPlanMachineDto.shift
+        : +noPlanMachine.shift.id,
+    );
+    const timeStart = await this.convertTime(shift.time_start);
+    const timeEnd = await this.convertTime(shift.time_end);
+
+    const timeIn = await this.convertTime(
+      updateNoPlanMachineDto.time_in
+        ? updateNoPlanMachineDto.time_in
+        : noPlanMachine.time_in,
+    );
+    const timeOut = await this.convertTime(
+      updateNoPlanMachineDto.time_out
+        ? updateNoPlanMachineDto.time_out
+        : noPlanMachine.time_out,
+    );
+
+    if (
+      timeIn >= timeStart &&
+      timeIn <= timeEnd &&
+      timeOut >= timeStart &&
+      timeOut <= timeEnd
+    ) {
+      if (timeIn < timeOut) {
+        updateNoPlanMachineDto.total = +timeOut - +timeIn;
+        await this.noPlanMachineRepository.update(id, updateNoPlanMachineDto);
+        const noPlanMachine = await this.noPlanMachineRepository.findOne({
+          where: { id: id },
+          relations: ['shift'],
+        });
+        return noPlanMachine;
+      }
+      throw new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
+    }
+    throw new HttpException('Out Range Shift', HttpStatus.BAD_REQUEST);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} noPlanMachine`;
+  async remove(id: number) {
+    const noPlanMachine = await this.noPlanMachineRepository.findOne({
+      where: { id: id },
+      relations: ['shift'],
+    });
+    if (noPlanMachine) {
+      await this.noPlanMachineRepository.delete(id);
+      return 'No Plan Machine Deleted';
+    }
+    throw new HttpException('No Plan Machine Not Found', HttpStatus.NOT_FOUND);
   }
 
   async convertTime(time: any) {

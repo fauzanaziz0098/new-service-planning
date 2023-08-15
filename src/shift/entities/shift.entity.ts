@@ -26,7 +26,7 @@ export class Shift {
     () => NoPlanMachine,
     (no_plan_machine_id) => no_plan_machine_id.shift,
   )
-  no_plan_machine_id: NoPlanMachine;
+  no_plan_machine_id: NoPlanMachine[];
 
   @CreateDateColumn()
   created_At: Date;
