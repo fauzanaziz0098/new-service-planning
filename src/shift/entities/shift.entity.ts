@@ -1,4 +1,5 @@
 import { NoPlanMachine } from 'src/no-plan-machine/entities/no-plan-machine.entity';
+import { PlanningProduction } from '../../planning-production/entities/planning-production.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -27,6 +28,12 @@ export class Shift {
     (no_plan_machine_id) => no_plan_machine_id.shift,
   )
   no_plan_machine_id: NoPlanMachine[];
+
+  @OneToMany(
+    () => PlanningProduction,
+    (planningProduction) => planningProduction.shift,
+  )
+  planningProduction: PlanningProduction[];
 
   @CreateDateColumn()
   created_At: Date;

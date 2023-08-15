@@ -125,4 +125,18 @@ export class NoPlanMachineService {
     const minute = +timeSplit[0] * 60 + +timeSplit[1];
     return minute;
   }
+
+  async findOneByShift(shiftId: any) {
+    const noPlanMachine = await this.noPlanMachineRepository
+      .createQueryBuilder('no_plan_machine')
+      .leftJoinAndSelect('no_plan_machine.shift', 'shift')
+      .where('shift.id = :id', {
+        id: shiftId,
+      })
+      .getMany();
+    if (noPlanMachine) {
+      return noPlanMachine;
+    }
+    throw new HttpException('No Plan Machine Not Found', HttpStatus.NOT_FOUND);
+  }
 }

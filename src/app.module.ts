@@ -13,6 +13,7 @@ import { ProductModule } from './product/product.module';
 import { MachineModule } from './machine/machine.module';
 import { ShiftModule } from './shift/shift.module';
 import { NoPlanMachineModule } from './no-plan-machine/no-plan-machine.module';
+import { PlanningProductionModule } from './planning-production/planning-production.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { NoPlanMachineModule } from './no-plan-machine/no-plan-machine.module';
     MachineModule,
     ShiftModule,
     NoPlanMachineModule,
+    PlanningProductionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

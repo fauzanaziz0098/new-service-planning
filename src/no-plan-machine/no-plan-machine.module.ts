@@ -12,5 +12,6 @@ import { ShiftModule } from 'src/shift/shift.module';
   ],
   controllers: [NoPlanMachineController],
   providers: [NoPlanMachineService],
+  exports: [NoPlanMachineService],
 })
 export class NoPlanMachineModule {}

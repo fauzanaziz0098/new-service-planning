@@ -1,9 +1,11 @@
+import { PlanningProduction } from 'src/planning-production/entities/planning-production.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 
 @Entity()
@@ -25,6 +27,12 @@ export class Product {
 
   @Column()
   unit: string;
+
+  @OneToMany(
+    () => PlanningProduction,
+    (planningProduction) => planningProduction.product,
+  )
+  planningProduction: PlanningProduction;
 
   @CreateDateColumn()
   created_at: Date;
