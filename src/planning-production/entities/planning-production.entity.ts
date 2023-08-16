@@ -40,10 +40,10 @@ export class PlanningProduction {
   @Column({ default: 0 })
   qty_per_minute: number;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp' })
   date_time_in: Date;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp' })
   date_time_out: Date;
 
   @Column({ default: 0 })
