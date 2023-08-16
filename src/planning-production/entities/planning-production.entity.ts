@@ -16,8 +16,8 @@ export class PlanningProduction {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // @Column()
-  // active_plan: boolean;
+  @Column()
+  active_plan: boolean;
 
   @ManyToOne(() => Machine, (machine) => machine.planningProduction)
   @JoinColumn({ name: 'machine_id' })

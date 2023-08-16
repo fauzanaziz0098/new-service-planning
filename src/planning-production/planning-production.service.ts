@@ -1,4 +1,10 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  forwardRef,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { CreatePlanningProductionDto } from './dto/create-planning-production.dto';
 import { UpdatePlanningProductionDto } from './dto/update-planning-production.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,42 +22,73 @@ export class PlanningProductionService {
   ) {}
 
   async create(createPlanningProductionDto: CreatePlanningProductionDto) {
-    // const isActivePlan = await this.planningProductionRepository.findOne({
-    //   where: { active_plan: true },
-    //   relations: ['shift'],
-    // });
-    // if (!isActivePlan) {
-    const noPlanMachine = await this.noPlanMachineService.findOneByShift(
-      createPlanningProductionDto.shift,
-    );
-    let totalNoPlanMachine = null;
-    noPlanMachine.map((res) => {
-      totalNoPlanMachine += res.total;
+    const isActivePlan = await this.planningProductionRepository.findOne({
+      where: { active_plan: true },
+      relations: ['shift'],
     });
-    createPlanningProductionDto.active_plan = true;
-    const timeIn = new Date(
-      createPlanningProductionDto.date_time_in,
-    ).toLocaleTimeString('it-IT');
-    const timeOut = new Date(
-      createPlanningProductionDto.date_time_out,
-    ).toLocaleTimeString('it-IT');
-    const differenceTime =
-      (await this.convertTime(timeOut)) - (await this.convertTime(timeIn));
-    createPlanningProductionDto.total = Math.round(differenceTime / 60) + 1;
-    const qty =
-      createPlanningProductionDto.qty_planning /
-      (differenceTime - totalNoPlanMachine);
-    createPlanningProductionDto.qty_per_minute = Math.round(qty);
-    createPlanningProductionDto.qty_per_hour = Math.round(qty * 60);
-    const planningProduction = await this.planningProductionRepository.save(
-      createPlanningProductionDto,
-    );
-    return planningProduction;
-    // } else {
-    //   createPlanningProductionDto.active_plan = false;
-    // }
 
-    // return 'test';
+    // AKTIF
+    if (!isActivePlan) {
+      const noPlanMachine = await this.noPlanMachineService.findOneByShift(
+        createPlanningProductionDto.shift,
+      );
+      let totalNoPlanMachine = null;
+      noPlanMachine.map((res) => {
+        totalNoPlanMachine += res.total;
+      });
+      createPlanningProductionDto.active_plan = true;
+      const timeIn = new Date(
+        createPlanningProductionDto.date_time_in,
+      ).toLocaleTimeString('it-IT');
+      const timeOut = new Date(
+        createPlanningProductionDto.date_time_out,
+      ).toLocaleTimeString('it-IT');
+      const differenceTime =
+        (await this.convertTime(timeOut)) - (await this.convertTime(timeIn));
+      createPlanningProductionDto.total = Math.round(differenceTime / 60) + 1;
+      const qty =
+        createPlanningProductionDto.qty_planning /
+        (differenceTime - totalNoPlanMachine);
+      createPlanningProductionDto.qty_per_minute = Math.round(qty);
+      createPlanningProductionDto.qty_per_hour = Math.round(qty * 60);
+      const planningProduction = await this.planningProductionRepository.save(
+        createPlanningProductionDto,
+      );
+      return planningProduction;
+
+      // MASUK ANTRIAN
+    } else {
+      try {
+        const noPlanMachine = await this.noPlanMachineService.findOneByShift(
+          createPlanningProductionDto.shift,
+        );
+        let totalNoPlanMachine = null;
+        noPlanMachine.map((res) => {
+          totalNoPlanMachine += res.total;
+        });
+        createPlanningProductionDto.active_plan = false;
+        const timeIn = new Date(
+          createPlanningProductionDto.date_time_in,
+        ).toLocaleTimeString('it-IT');
+        const timeOut = new Date(
+          createPlanningProductionDto.date_time_out,
+        ).toLocaleTimeString('it-IT');
+        const differenceTime =
+          (await this.convertTime(timeOut)) - (await this.convertTime(timeIn));
+        createPlanningProductionDto.total = Math.round(differenceTime / 60) + 1;
+        const qty =
+          createPlanningProductionDto.qty_planning /
+          (differenceTime - totalNoPlanMachine);
+        createPlanningProductionDto.qty_per_minute = Math.round(qty);
+        createPlanningProductionDto.qty_per_hour = Math.round(qty * 60);
+        const planningProduction = await this.planningProductionRepository.save(
+          createPlanningProductionDto,
+        );
+        return planningProduction;
+      } catch (error) {
+        throw new Error(error);
+      }
+    }
   }
 
   findAll() {
