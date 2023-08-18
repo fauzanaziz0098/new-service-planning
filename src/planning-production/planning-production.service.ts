@@ -186,6 +186,10 @@ export class PlanningProductionService {
           (differenceTime - totalNoPlanMachine);
         createPlanningProductionDto.qty_per_minute = Math.round(qty);
         createPlanningProductionDto.qty_per_hour = Math.round(qty * 60);
+        createPlanningProductionDto.dandory_time =
+          createPlanningProductionDto.dandory_time
+            ? createPlanningProductionDto.dandory_time
+            : 0;
         const planningProduction = await this.planningProductionRepository.save(
           createPlanningProductionDto,
         );
