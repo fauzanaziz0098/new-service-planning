@@ -11,6 +11,7 @@ import {
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { Paginate, PaginateQuery } from 'nestjs-paginate';
 
 @Controller('product')
 export class ProductController {
@@ -22,8 +23,8 @@ export class ProductController {
   }
 
   @Get()
-  findAll() {
-    return this.productService.findAll();
+  findAll(@Paginate() query: PaginateQuery) {
+    return this.productService.findAll(query);
   }
 
   @Get(':id')
@@ -42,5 +43,10 @@ export class ProductController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productService.remove(+id);
+  }
+
+  @Post('delete/many')
+  async removeMany(@Body('ids') ids: string[]) {
+    return await this.productService.removeMany(ids);
   }
 }

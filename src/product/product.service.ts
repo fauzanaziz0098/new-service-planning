@@ -4,6 +4,12 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
 import { Repository } from 'typeorm';
+import {
+  FilterOperator,
+  PaginateConfig,
+  PaginateQuery,
+  paginate,
+} from 'nestjs-paginate';
 
 @Injectable()
 export class ProductService {
@@ -28,9 +34,22 @@ export class ProductService {
     );
   }
 
-  findAll() {
-    const allProduct = this.productRepository.find();
-    return allProduct;
+  async findAll(query: PaginateQuery) {
+    const queryBuilder = this.productRepository.createQueryBuilder('product');
+    var filterableColumns = {};
+    if (query.filter?.['part_name']) {
+      filterableColumns['part_name'] = [FilterOperator.EQ];
+    }
+
+    const config: PaginateConfig<Product> = {
+      sortableColumns: ['id'],
+      searchableColumns: ['part_name'],
+      filterableColumns,
+    };
+
+    return paginate<Product>(query, queryBuilder, config);
+    // const allProduct = this.productRepository.find();
+    // return allProduct;
   }
 
   async findOne(id: number) {
@@ -58,5 +77,23 @@ export class ProductService {
       return `${product.part_name} deleted`;
     }
     throw new HttpException('Product Not Found', HttpStatus.NOT_FOUND);
+  }
+
+  async findMany(ids: string[]) {
+    return this.productRepository
+      .createQueryBuilder('product')
+      .where('product.id IN(:...ids)', {
+        ids: ids,
+      })
+      .getMany();
+  }
+  async removeMany(ids: string[]) {
+    if (typeof ids === 'string') {
+      ids = [`${ids}`];
+    }
+
+    const productIds: Product[] = await this.findMany(ids);
+    await this.productRepository.remove(productIds);
+    return 'Product has been Deleted Successfully';
   }
 }

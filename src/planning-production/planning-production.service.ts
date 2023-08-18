@@ -89,7 +89,7 @@ export class PlanningProductionService {
       this.client.publish(
         `${topicSplit}:PLAN:RPA`,
         sendVariable,
-        { qos: 1 },
+        { qos: 2, retain: true },
         (error) => {
           if (error) {
             console.error('Error publishing message:', error);

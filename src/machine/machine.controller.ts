@@ -11,6 +11,7 @@ import {
 import { MachineService } from './machine.service';
 import { CreateMachineDto } from './dto/create-machine.dto';
 import { UpdateMachineDto } from './dto/update-machine.dto';
+import { Paginate, PaginateQuery } from 'nestjs-paginate';
 
 @Controller('machine')
 export class MachineController {
@@ -22,8 +23,8 @@ export class MachineController {
   }
 
   @Get()
-  findAll() {
-    return this.machineService.findAll();
+  findAll(@Paginate() query: PaginateQuery) {
+    return this.machineService.findAll(query);
   }
 
   @Get(':id')
@@ -42,5 +43,10 @@ export class MachineController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.machineService.remove(+id);
+  }
+
+  @Post('delete/many')
+  async removeMany(@Body('ids') ids: string[]) {
+    return this.machineService.removeMany(ids);
   }
 }

@@ -4,6 +4,12 @@ import { UpdateMachineDto } from './dto/update-machine.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Machine } from './entities/machine.entity';
 import { Repository } from 'typeorm';
+import {
+  FilterOperator,
+  PaginateConfig,
+  PaginateQuery,
+  paginate,
+} from 'nestjs-paginate';
 
 @Injectable()
 export class MachineService {
@@ -25,9 +31,22 @@ export class MachineService {
     );
   }
 
-  findAll() {
-    const allMachine = this.machineRepository.find();
-    return allMachine;
+  async findAll(query: PaginateQuery) {
+    const queryBuilder = this.machineRepository.createQueryBuilder('machine');
+    var filterableColumns = {};
+    if (query.filter?.['name']) {
+      filterableColumns['name'] = [FilterOperator.EQ];
+    }
+
+    const config: PaginateConfig<Machine> = {
+      sortableColumns: ['id'],
+      searchableColumns: ['name'],
+      filterableColumns,
+    };
+
+    return paginate<Machine>(query, queryBuilder, config);
+    // const allMachine = this.machineRepository.find();
+    // return allMachine;
   }
 
   async findOne(id: number) {
@@ -57,5 +76,24 @@ export class MachineService {
       return `${machine.name} deleted`;
     }
     throw new HttpException('Machine Not Found', HttpStatus.NOT_FOUND);
+  }
+
+  async findMany(ids: string[]) {
+    return this.machineRepository
+      .createQueryBuilder('machine')
+      .where('machine.id IN(:...ids)', {
+        ids: ids,
+      })
+      .getMany();
+  }
+
+  async removeMany(ids: string[]) {
+    if (typeof ids === 'string') {
+      ids = [`${ids}`];
+    }
+
+    const machineIds: Machine[] = await this.findMany(ids);
+    await this.machineRepository.remove(machineIds);
+    return 'Machine has been Deleted Successfully';
   }
 }
