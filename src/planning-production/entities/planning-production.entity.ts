@@ -55,6 +55,9 @@ export class PlanningProduction {
   @Column({ nullable: true })
   remark: string;
 
+  @Column({ nullable: true })
+  dandory_time: number;
+
   @CreateDateColumn()
   created_at: Date;
 

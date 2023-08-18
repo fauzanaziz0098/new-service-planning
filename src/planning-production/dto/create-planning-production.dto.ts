@@ -32,4 +32,6 @@ export class CreatePlanningProductionDto {
   total: number;
 
   remark: string;
+
+  dandory_time: number;
 }

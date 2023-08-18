@@ -23,16 +23,18 @@ export class PlanningProductionController {
     @Body(new ValidationPipe())
     createPlanningProductionDto: CreatePlanningProductionDto,
   ) {
-    return this.planningProductionService.create(createPlanningProductionDto);
+    return this.planningProductionService.createPlanningProduction(
+      createPlanningProductionDto,
+    );
   }
 
   @Get()
-  findAll() {
-    return this.planningProductionService.findAll();
+  findActive() {
+    return this.planningProductionService.getPlanningProduction();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.planningProductionService.findOne(+id);
+  @Post('stop-planning-production')
+  stopPlanning() {
+    return this.planningProductionService.stopPlanningProduction();
   }
 }
