@@ -99,14 +99,6 @@ export class PlanningProductionService {
     }
   }
 
-  async publish() {
-    this.client.publish('test', 'sendVariable', { qos: 2 }, (error) => {
-      if (error) {
-        console.error('Error publishing message:', error);
-      }
-    });
-  }
-
   // CREATE PLANNING PRODUCTION
   async createPlanningProduction(
     createPlanningProductionDto: CreatePlanningProductionDto,
