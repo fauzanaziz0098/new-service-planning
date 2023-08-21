@@ -5,12 +5,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlanningProduction } from './entities/planning-production.entity';
 import { NoPlanMachineModule } from 'src/no-plan-machine/no-plan-machine.module';
 import { ShiftModule } from 'src/shift/shift.module';
+import { MachineModule } from 'src/machine/machine.module';
+import { ProductModule } from 'src/product/product.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PlanningProduction]),
     forwardRef(() => NoPlanMachineModule),
     forwardRef(() => ShiftModule),
+    forwardRef(() => MachineModule),
+    forwardRef(() => ProductModule),
   ],
   controllers: [PlanningProductionController],
   providers: [PlanningProductionService],

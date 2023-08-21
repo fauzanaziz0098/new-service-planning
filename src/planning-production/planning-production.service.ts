@@ -14,6 +14,8 @@ import { NoPlanMachineService } from 'src/no-plan-machine/no-plan-machine.servic
 import * as mqtt from 'mqtt';
 import { VariablePlanningProduction } from 'src/interface/variable-loss-time.interface';
 import { ShiftService } from 'src/shift/shift.service';
+import { MachineService } from 'src/machine/machine.service';
+import { ProductService } from 'src/product/product.service';
 
 @Injectable()
 export class PlanningProductionService {
@@ -25,6 +27,10 @@ export class PlanningProductionService {
     private noPlanMachineService: NoPlanMachineService,
     @Inject(forwardRef(() => ShiftService))
     private shiftService: ShiftService,
+    @Inject(forwardRef(() => MachineService))
+    private machineService: MachineService,
+    @Inject(forwardRef(() => ProductService))
+    private productService: ProductService,
   ) {
     this.initializeMqttClient();
   }
@@ -103,24 +109,26 @@ export class PlanningProductionService {
   async createPlanningProduction(
     createPlanningProductionDto: CreatePlanningProductionDto,
   ) {
+    // cek aktif plan
     const isActivePlan = await this.planningProductionRepository.findOne({
       where: { active_plan: true },
       relations: ['shift'],
     });
-    const waitDandory = await this.planningProductionRepository.findOne({
-      where: { dandory_time: Not(IsNull()) },
-    });
+    //cek shift
     const shift = await this.shiftService.findOne(
       +createPlanningProductionDto.shift,
     );
-    if (!shift) {
-      throw new HttpException('Shift Not Found', HttpStatus.NOT_FOUND);
-    }
+    // cek machine
+    await this.machineService.findOne(+createPlanningProductionDto.machine);
+    // cek product
+    await this.productService.findOne(+createPlanningProductionDto.product);
+
+    // convert shift jadi menit
     const shiftStart = await this.convertTime(shift.time_start);
     const shiftEnd = await this.convertTime(shift.time_end);
 
-    // AKTIF
-    if (!isActivePlan && !waitDandory) {
+    // jika tidak ada plan yang aktif dan tidak ada dandory time, AKTIF
+    if (!isActivePlan) {
       const noPlanMachine = await this.noPlanMachineService.findOneByShift(
         createPlanningProductionDto.shift,
       );
@@ -129,9 +137,13 @@ export class PlanningProductionService {
         totalNoPlanMachine += res.total;
       });
       createPlanningProductionDto.active_plan = true;
+
+      // convert time in ke menit
       const timeIn = new Date(
         createPlanningProductionDto.date_time_in,
       ).toLocaleTimeString('it-IT');
+
+      // convert time out ke menit
       const timeOut = new Date(
         createPlanningProductionDto.date_time_out,
       ).toLocaleTimeString('it-IT');
@@ -139,8 +151,10 @@ export class PlanningProductionService {
         (await this.convertTime(timeIn)) >= shiftStart &&
         (await this.convertTime(timeOut)) <= shiftEnd
       ) {
+        // selisih waktu masuk dan keluar dalam menit
         const differenceTime =
           (await this.convertTime(timeOut)) - (await this.convertTime(timeIn));
+
         createPlanningProductionDto.total = Math.round(differenceTime / 60) + 1;
         const qty =
           createPlanningProductionDto.qty_planning /
@@ -158,7 +172,7 @@ export class PlanningProductionService {
       }
       return new HttpException('Out Of Shift', HttpStatus.BAD_REQUEST);
 
-      // MASUK ANTRIAN
+      // Jika ada dandory time dan plan aktif,MASUK ANTRIAN
     } else {
       const noPlanMachine = await this.noPlanMachineService.findOneByShift(
         createPlanningProductionDto.shift,
@@ -200,6 +214,7 @@ export class PlanningProductionService {
   }
 
   async stopPlanningProduction() {
+    // cek aktif plan
     const activePlan = await this.planningProductionRepository.findOne({
       where: { active_plan: true },
       relations: ['shift'],
@@ -208,6 +223,8 @@ export class PlanningProductionService {
     if (!activePlan) {
       return 'No Active Plan';
     }
+
+    // cek plan berikutnya yang akan aktif
     const nextPlan = await this.planningProductionRepository.findOne({
       where: { id: MoreThan(activePlan.id) },
       order: { id: 'asc' },
@@ -215,19 +232,27 @@ export class PlanningProductionService {
     if (nextPlan) {
       if (nextPlan.dandory_time != 0) {
         await this.planningProductionRepository.update(activePlan.id, {
-          active_plan: false,
+          // active_plan: false,
+          dandory_time: -1,
         });
         setTimeout(async () => {
           await this.planningProductionRepository.update(nextPlan.id, {
             active_plan: true,
             dandory_time: null,
           });
+          await this.planningProductionRepository.update(activePlan.id, {
+            active_plan: false,
+            dandory_time: null,
+          });
           const newNextPlan = this.planningProductionRepository.findOne({
             where: { id: nextPlan.id },
           });
           return newNextPlan;
-        }, 6000 * nextPlan.dandory_time);
-        return `Waiting Dandory Time To Activate Next Plan, Least ${nextPlan.dandory_time} minute`;
+        }, 60000 * nextPlan.dandory_time);
+        if (nextPlan.dandory_time != null) {
+          return `Waiting Dandory Time To Activate Next Plan, Least ${nextPlan.dandory_time} minute`;
+        }
+        return `Plan has been Stopped, Activate Next Plan`;
       } else {
         await this.planningProductionRepository.update(activePlan.id, {
           active_plan: false,
@@ -255,6 +280,12 @@ export class PlanningProductionService {
         relations: ['shift', 'product', 'machine'],
       });
     if (activePlanProduction) {
+      // jika dandory time plan active negative, berarti sedang menunggu dandory time dari plan berikutnya untuk aktif
+      if (activePlanProduction.dandory_time < 0) {
+        (activePlanProduction as any).message = 'Waiting Dandory Time';
+        return activePlanProduction;
+      }
+      (activePlanProduction as any).message = null;
       return activePlanProduction;
     }
     throw new HttpException('No Active Plan', HttpStatus.NOT_FOUND);
