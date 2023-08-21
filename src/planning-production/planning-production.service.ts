@@ -200,10 +200,6 @@ export class PlanningProductionService {
           (differenceTime - totalNoPlanMachine);
         createPlanningProductionDto.qty_per_minute = Math.round(qty);
         createPlanningProductionDto.qty_per_hour = Math.round(qty * 60);
-        createPlanningProductionDto.dandory_time =
-          createPlanningProductionDto.dandory_time
-            ? createPlanningProductionDto.dandory_time
-            : 0;
         const planningProduction = await this.planningProductionRepository.save(
           createPlanningProductionDto,
         );
@@ -263,7 +259,7 @@ export class PlanningProductionService {
         const newNextPlan = this.planningProductionRepository.findOne({
           where: { id: nextPlan.id },
         });
-        return newNextPlan;
+        return `Plan has been Stopped, Activate Next Plan`;
       }
     }
     await this.planningProductionRepository.update(activePlan.id, {
