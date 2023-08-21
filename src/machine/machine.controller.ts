@@ -27,6 +27,11 @@ export class MachineController {
     return this.machineService.findAll(query);
   }
 
+  @Get('all-machines')
+  getAll() {
+    return this.machineService.getAll();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.machineService.findOne(+id);

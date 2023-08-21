@@ -49,6 +49,11 @@ export class MachineService {
     // return allMachine;
   }
 
+  async getAll() {
+    const allMachine = this.machineRepository.find();
+    return allMachine;
+  }
+
   async findOne(id: number) {
     const machine = await this.machineRepository.findOne({ where: { id: id } });
     if (machine) {
