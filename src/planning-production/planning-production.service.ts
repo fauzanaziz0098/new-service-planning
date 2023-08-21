@@ -109,6 +109,8 @@ export class PlanningProductionService {
   async createPlanningProduction(
     createPlanningProductionDto: CreatePlanningProductionDto,
   ) {
+    const allPlanningProduction =
+      await this.planningProductionRepository.find();
     // cek aktif plan
     const isActivePlan = await this.planningProductionRepository.findOne({
       where: { active_plan: true },
@@ -127,6 +129,41 @@ export class PlanningProductionService {
     const shiftStart = await this.convertTime(shift.time_start);
     const shiftEnd = await this.convertTime(shift.time_end);
 
+    // convert time in ke menit
+    const timeIn = new Date(
+      createPlanningProductionDto.date_time_in,
+    ).toLocaleTimeString('it-IT');
+
+    // convert time out ke menit
+    const timeOut = new Date(
+      createPlanningProductionDto.date_time_out,
+    ).toLocaleTimeString('it-IT');
+
+    // validasi time
+    if (timeIn > timeOut) {
+      return 'Time In Greater Than Time Out';
+    }
+    const validateTimeIn = allPlanningProduction.map((plan) => {
+      const newPlanDateIn = new Date(
+        createPlanningProductionDto.date_time_in,
+      ).getTime();
+      const planDateIn = new Date(plan.date_time_in).getTime();
+      return newPlanDateIn >= planDateIn;
+    });
+    const validateTimeOut = allPlanningProduction.map((plan) => {
+      const newPlanDateOut = new Date(
+        createPlanningProductionDto.date_time_out,
+      ).getTime();
+      const planDateout = new Date(plan.date_time_out).getTime();
+      return newPlanDateOut >= planDateout;
+    });
+    if (validateTimeIn.includes(true)) {
+      return 'Time In Already Used By Other Plan';
+    }
+    if (validateTimeOut.includes(true)) {
+      return 'Time Out Already Used By Other Plan';
+    }
+
     // jika tidak ada plan yang aktif dan tidak ada dandory time, AKTIF
     if (!isActivePlan) {
       const noPlanMachine = await this.noPlanMachineService.findOneByShift(
@@ -138,15 +175,6 @@ export class PlanningProductionService {
       });
       createPlanningProductionDto.active_plan = true;
 
-      // convert time in ke menit
-      const timeIn = new Date(
-        createPlanningProductionDto.date_time_in,
-      ).toLocaleTimeString('it-IT');
-
-      // convert time out ke menit
-      const timeOut = new Date(
-        createPlanningProductionDto.date_time_out,
-      ).toLocaleTimeString('it-IT');
       if (
         (await this.convertTime(timeIn)) >= shiftStart &&
         (await this.convertTime(timeOut)) <= shiftEnd
@@ -182,12 +210,6 @@ export class PlanningProductionService {
         totalNoPlanMachine += res.total;
       });
       createPlanningProductionDto.active_plan = false;
-      const timeIn = new Date(
-        createPlanningProductionDto.date_time_in,
-      ).toLocaleTimeString('it-IT');
-      const timeOut = new Date(
-        createPlanningProductionDto.date_time_out,
-      ).toLocaleTimeString('it-IT');
       if (
         (await this.convertTime(timeIn)) >= shiftStart &&
         (await this.convertTime(timeOut)) <= shiftEnd
