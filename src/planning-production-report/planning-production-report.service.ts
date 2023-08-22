@@ -23,6 +23,18 @@ export class PlanningProductionReportService {
       this.planningProductionReportRepository.createQueryBuilder(
         'planningProductionReport',
       );
+    const startDate = query?.filter?.startDate;
+    const endDate = query?.filter?.endDate;
+
+    if (startDate && endDate) {
+      queryBuilder.andWhere(
+        'planningProductionReport.created_at BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
+    }
     var filterableColumns = {};
     if (query.filter?.['product_part_name']) {
       filterableColumns['product_part_name'] = [FilterOperator.EQ];
