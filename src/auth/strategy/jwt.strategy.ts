@@ -1,16 +1,12 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-  ) {
+  constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -19,12 +15,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const user = await this.userRepository.findOne({
-      where: { email: payload.email },
-    });
+    // const user = await this.userRepository.findOne({
+    //   where: { email: payload.email },
+    // });
 
-    if (!user) {
-      return null;
+    // if (!user) {
+    //   return null;
+    // }
+    const tokenExpired = this.isTokenExpired(payload.exp);
+
+    if (tokenExpired) {
+      throw new UnauthorizedException('Token has expired');
     }
 
     return {
@@ -32,6 +33,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       username: payload.username,
       email: payload.email,
       role: payload.role,
+      client: payload.client,
     };
+  }
+
+  private isTokenExpired(expirationTime: number): boolean {
+    const currentTime = Math.floor(Date.now() / 1000); // Get current Unix timestamp
+    return expirationTime < currentTime;
   }
 }
