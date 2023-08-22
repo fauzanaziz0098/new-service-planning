@@ -37,13 +37,17 @@ export class PlanningProductionController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
-  findActive() {
-    return this.planningProductionService.getPlanningProduction();
+  findActive(@Req() req: Request) {
+    return this.planningProductionService.getPlanningProduction(
+      req.user['client'],
+    );
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Post('stop-planning-production')
-  stopPlanning() {
-    return this.planningProductionService.stopPlanningProduction();
+  stopPlanning(@Req() req: Request) {
+    return this.planningProductionService.stopPlanningProduction(
+      req.user['client'],
+    );
   }
 }

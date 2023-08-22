@@ -33,14 +33,14 @@ export class ProductController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
-  findAll(@Paginate() query: PaginateQuery) {
-    return this.productService.findAll(query);
+  findAll(@Paginate() query: PaginateQuery, @Req() req: Request) {
+    return this.productService.findAll(query, req.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productService.findOne(+id);
+  findOne(@Param('id') id: string, @Req() req: Request) {
+    return this.productService.findOne(+id, req.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -48,19 +48,24 @@ export class ProductController {
   update(
     @Param('id') id: string,
     @Body(new ValidationPipe()) updateProductDto: UpdateProductDto,
+    @Req() req: Request,
   ) {
-    return this.productService.update(+id, updateProductDto);
+    return this.productService.update(
+      +id,
+      updateProductDto,
+      req.user['client'],
+    );
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productService.remove(+id);
+  remove(@Param('id') id: string, @Req() req: Request) {
+    return this.productService.remove(+id, req.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Post('delete/many')
-  async removeMany(@Body('ids') ids: string[]) {
-    return await this.productService.removeMany(ids);
+  async removeMany(@Body('ids') ids: string[], @Req() req: Request) {
+    return await this.productService.removeMany(ids, req.user['client']);
   }
 }

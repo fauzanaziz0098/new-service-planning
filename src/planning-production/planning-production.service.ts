@@ -118,7 +118,10 @@ export class PlanningProductionService {
       await this.planningProductionRepository.find();
     // cek aktif plan
     const isActivePlan = await this.planningProductionRepository.findOne({
-      where: { active_plan: true },
+      where: {
+        active_plan: true,
+        client_id: createPlanningProductionDto.client_id,
+      },
       relations: ['shift'],
     });
     //cek shift
@@ -128,10 +131,12 @@ export class PlanningProductionService {
     // cek machine
     const machine = await this.machineService.findOne(
       +createPlanningProductionDto.machine,
+      createPlanningProductionDto.client_id,
     );
     // cek product
     const product = await this.productService.findOne(
       +createPlanningProductionDto.product,
+      createPlanningProductionDto.client_id,
     );
 
     // convert shift jadi menit
@@ -270,16 +275,16 @@ export class PlanningProductionService {
     }
   }
 
-  async stopPlanningProduction() {
+  async stopPlanningProduction(client_id: string) {
     // cek aktif plan
     const activePlan = await this.planningProductionRepository.findOne({
-      where: { active_plan: true },
+      where: { active_plan: true, client_id: client_id },
       relations: ['shift'],
     });
 
     const planningProductionReport =
       await this.planningProductionReportRepository.findOne({
-        where: { time_end: IsNull() },
+        where: { time_end: IsNull(), client_id: client_id },
       });
 
     if (planningProductionReport) {
@@ -296,13 +301,19 @@ export class PlanningProductionService {
 
     // cek plan berikutnya yang akan aktif
     const nextPlan = await this.planningProductionRepository.findOne({
-      where: { id: MoreThan(activePlan.id) },
+      where: { id: MoreThan(activePlan.id), client_id },
       order: { id: 'asc' },
       relations: ['product', 'machine'],
     });
     if (nextPlan) {
-      const machine = await this.machineService.findOne(+nextPlan.machine.id);
-      const product = await this.productService.findOne(+nextPlan.product.id);
+      const machine = await this.machineService.findOne(
+        +nextPlan.machine.id,
+        nextPlan.client_id,
+      );
+      const product = await this.productService.findOne(
+        +nextPlan.product.id,
+        nextPlan.client_id,
+      );
       if (nextPlan.dandory_time != 0) {
         await this.planningProductionRepository.update(activePlan.id, {
           // active_plan: false,
@@ -318,7 +329,7 @@ export class PlanningProductionService {
             dandory_time: null,
           });
           const newNextPlan = this.planningProductionRepository.findOne({
-            where: { id: nextPlan.id },
+            where: { id: nextPlan.id, client_id: client_id },
           });
 
           //report
@@ -351,7 +362,7 @@ export class PlanningProductionService {
           active_plan: true,
         });
         const newNextPlan = this.planningProductionRepository.findOne({
-          where: { id: nextPlan.id },
+          where: { id: nextPlan.id, client_id },
         });
         return `Plan has been Stopped, Activate Next Plan`;
       }
@@ -363,10 +374,10 @@ export class PlanningProductionService {
     return 'No Plan In Queue, No Active Plan';
   }
 
-  async getPlanningProduction() {
+  async getPlanningProduction(client_id: string) {
     const activePlanProduction =
       await this.planningProductionRepository.findOne({
-        where: { active_plan: true },
+        where: { active_plan: true, client_id: client_id },
         relations: ['shift', 'product', 'machine'],
       });
     if (activePlanProduction) {

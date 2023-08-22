@@ -31,8 +31,10 @@ export class MachineService {
     );
   }
 
-  async findAll(query: PaginateQuery) {
-    const queryBuilder = this.machineRepository.createQueryBuilder('machine');
+  async findAll(query: PaginateQuery, client_id: string) {
+    const queryBuilder = this.machineRepository
+      .createQueryBuilder('machine')
+      .where('machine.client_id = :client_id', { client_id: client_id });
     var filterableColumns = {};
     if (query.filter?.['name']) {
       filterableColumns['name'] = [FilterOperator.EQ];
@@ -49,21 +51,29 @@ export class MachineService {
     // return allMachine;
   }
 
-  async getAll() {
-    const allMachine = this.machineRepository.find();
+  async getAll(client_id: string) {
+    const allMachine = this.machineRepository.find({ where: { client_id } });
     return allMachine;
   }
 
-  async findOne(id: number) {
-    const machine = await this.machineRepository.findOne({ where: { id: id } });
+  async findOne(id: number, client_id: string) {
+    const machine = await this.machineRepository.findOne({
+      where: { id: id, client_id },
+    });
     if (machine) {
       return machine;
     }
     throw new HttpException('Machine Not Found', HttpStatus.NOT_FOUND);
   }
 
-  async update(id: number, updateMachineDto: UpdateMachineDto) {
-    const machine = await this.machineRepository.findOne({ where: { id: id } });
+  async update(
+    id: number,
+    updateMachineDto: UpdateMachineDto,
+    client_id: string,
+  ) {
+    const machine = await this.machineRepository.findOne({
+      where: { id: id, client_id },
+    });
     if (machine) {
       await this.machineRepository.update(id, updateMachineDto);
       const updatedMachine = await this.machineRepository.findOne({
@@ -74,8 +84,10 @@ export class MachineService {
     throw new HttpException('Machine Not Found', HttpStatus.NOT_FOUND);
   }
 
-  async remove(id: number) {
-    const machine = await this.machineRepository.findOne({ where: { id: id } });
+  async remove(id: number, client_id: string) {
+    const machine = await this.machineRepository.findOne({
+      where: { id: id, client_id },
+    });
     if (machine) {
       await this.machineRepository.delete(id);
       return `${machine.name} deleted`;
@@ -83,21 +95,22 @@ export class MachineService {
     throw new HttpException('Machine Not Found', HttpStatus.NOT_FOUND);
   }
 
-  async findMany(ids: string[]) {
+  async findMany(ids: string[], client_id: string) {
     return this.machineRepository
       .createQueryBuilder('machine')
       .where('machine.id IN(:...ids)', {
         ids: ids,
       })
+      .andWhere('machine.client_id =:client_id', { client_id })
       .getMany();
   }
 
-  async removeMany(ids: string[]) {
+  async removeMany(ids: string[], client_id: string) {
     if (typeof ids === 'string') {
       ids = [`${ids}`];
     }
 
-    const machineIds: Machine[] = await this.findMany(ids);
+    const machineIds: Machine[] = await this.findMany(ids, client_id);
     await this.machineRepository.remove(machineIds);
     return 'Machine has been Deleted Successfully';
   }

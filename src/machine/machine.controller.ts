@@ -33,19 +33,19 @@ export class MachineController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
-  findAll(@Paginate() query: PaginateQuery) {
-    return this.machineService.findAll(query);
+  findAll(@Paginate() query: PaginateQuery, @Req() req: Request) {
+    return this.machineService.findAll(query, req.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('all-machines')
-  getAll() {
-    return this.machineService.getAll();
+  getAll(@Req() req: Request) {
+    return this.machineService.getAll(req.user['client']);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.machineService.findOne(+id);
+  findOne(@Param('id') id: string, @Req() req: Request) {
+    return this.machineService.findOne(+id, req.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -53,19 +53,24 @@ export class MachineController {
   update(
     @Param('id') id: string,
     @Body(new ValidationPipe()) updateMachineDto: UpdateMachineDto,
+    @Req() req: Request,
   ) {
-    return this.machineService.update(+id, updateMachineDto);
+    return this.machineService.update(
+      +id,
+      updateMachineDto,
+      req.user['client'],
+    );
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.machineService.remove(+id);
+  remove(@Param('id') id: string, @Req() req: Request) {
+    return this.machineService.remove(+id, req.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Post('delete/many')
-  async removeMany(@Body('ids') ids: string[]) {
-    return this.machineService.removeMany(ids);
+  async removeMany(@Body('ids') ids: string[], @Req() req: Request) {
+    return this.machineService.removeMany(ids, req.user['client']);
   }
 }
