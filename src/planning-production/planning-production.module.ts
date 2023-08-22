@@ -7,10 +7,11 @@ import { NoPlanMachineModule } from 'src/no-plan-machine/no-plan-machine.module'
 import { ShiftModule } from 'src/shift/shift.module';
 import { MachineModule } from 'src/machine/machine.module';
 import { ProductModule } from 'src/product/product.module';
+import { PlanningProductionReport } from '../planning-production-report/entities/planning-production-report.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PlanningProduction]),
+    TypeOrmModule.forFeature([PlanningProduction, PlanningProductionReport]),
     forwardRef(() => NoPlanMachineModule),
     forwardRef(() => ShiftModule),
     forwardRef(() => MachineModule),

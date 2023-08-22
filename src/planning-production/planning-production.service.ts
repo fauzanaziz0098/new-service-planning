@@ -16,6 +16,9 @@ import { VariablePlanningProduction } from 'src/interface/variable-loss-time.int
 import { ShiftService } from 'src/shift/shift.service';
 import { MachineService } from 'src/machine/machine.service';
 import { ProductService } from 'src/product/product.service';
+import { PlanningProductionReport } from '../planning-production-report/entities/planning-production-report.entity';
+import { CreatePlanningProductionReportDto } from '../planning-production-report/dto/create-planning-production-report.dto';
+import * as moment from 'moment';
 
 @Injectable()
 export class PlanningProductionService {
@@ -23,6 +26,8 @@ export class PlanningProductionService {
   constructor(
     @InjectRepository(PlanningProduction)
     private readonly planningProductionRepository: Repository<PlanningProduction>,
+    @InjectRepository(PlanningProductionReport)
+    private readonly planningProductionReportRepository: Repository<PlanningProductionReport>,
     @Inject(forwardRef(() => NoPlanMachineService))
     private noPlanMachineService: NoPlanMachineService,
     @Inject(forwardRef(() => ShiftService))
@@ -121,9 +126,13 @@ export class PlanningProductionService {
       +createPlanningProductionDto.shift,
     );
     // cek machine
-    await this.machineService.findOne(+createPlanningProductionDto.machine);
+    const machine = await this.machineService.findOne(
+      +createPlanningProductionDto.machine,
+    );
     // cek product
-    await this.productService.findOne(+createPlanningProductionDto.product);
+    const product = await this.productService.findOne(
+      +createPlanningProductionDto.product,
+    );
 
     // convert shift jadi menit
     const shiftStart = await this.convertTime(shift.time_start);
@@ -196,6 +205,20 @@ export class PlanningProductionService {
         const planningProduction = await this.planningProductionRepository.save(
           createPlanningProductionDto,
         );
+        const now = moment();
+        await this.planningProductionReportRepository.save({
+          product_part_name: product.part_name,
+          product_part_number: product.part_number,
+          qty_planning: planningProduction.qty_planning,
+          planning_total: planningProduction.total,
+          product_cycle_time: product.cycle_time,
+          production_qty_actual: planningProduction.qty_per_hour,
+          time_start: now.format('HH:MM:SS'),
+          time_end: null,
+          machine_name: machine.name,
+          planning_date_time_in: planningProduction.date_time_in,
+          planning_date_time_out: planningProduction.date_time_out,
+        });
         return planningProduction;
       }
       return new HttpException('Out Of Shift', HttpStatus.BAD_REQUEST);
@@ -225,6 +248,20 @@ export class PlanningProductionService {
         const planningProduction = await this.planningProductionRepository.save(
           createPlanningProductionDto,
         );
+        const now = moment();
+        await this.planningProductionReportRepository.save({
+          product_part_name: product.part_name,
+          product_part_number: product.part_number,
+          qty_planning: planningProduction.qty_planning,
+          planning_total: planningProduction.total,
+          product_cycle_time: product.cycle_time,
+          production_qty_actual: planningProduction.qty_per_hour,
+          time_start: now.format('HH:MM:SS'),
+          time_end: null,
+          machine_name: machine.name,
+          planning_date_time_in: planningProduction.date_time_in,
+          planning_date_time_out: planningProduction.date_time_out,
+        });
         return planningProduction;
       }
       return new HttpException('Out Of Shift', HttpStatus.BAD_REQUEST);
@@ -237,6 +274,19 @@ export class PlanningProductionService {
       where: { active_plan: true },
       relations: ['shift'],
     });
+
+    const planningProductionReport =
+      await this.planningProductionReportRepository.findOne({
+        where: { time_end: IsNull() },
+      });
+
+    if (planningProductionReport) {
+      const now = moment();
+      await this.planningProductionReportRepository.update(
+        planningProductionReport.id,
+        { time_end: now.format('HH:MM:SS') },
+      );
+    }
 
     if (!activePlan) {
       return 'No Active Plan';
