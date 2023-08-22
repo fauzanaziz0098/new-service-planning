@@ -5,10 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-import { RoleModule } from './role/role.module';
-import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
-import { ClientModule } from './client/client.module';
 import { ProductModule } from './product/product.module';
 import { MachineModule } from './machine/machine.module';
 import { ShiftModule } from './shift/shift.module';
@@ -47,9 +44,6 @@ import { PlanningProductionReportModule } from './planning-production-report/pla
     }),
 
     AuthModule,
-    RoleModule,
-    UserModule,
-    ClientModule,
     ProductModule,
     MachineModule,
     ShiftModule,
