@@ -11,6 +11,9 @@ export class PlanningProductionReport {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column()
+  client_id: string;
+
   @Column({ nullable: true })
   time_start: string;
 

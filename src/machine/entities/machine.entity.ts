@@ -13,6 +13,9 @@ export class Machine {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column()
+  client_id: string;
+
   @Column({ unique: true })
   name: string;
 

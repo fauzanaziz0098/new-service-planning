@@ -2,6 +2,8 @@ import { Shift } from 'src/shift/entities/shift.entity';
 import { IsNotEmpty } from 'class-validator';
 
 export class CreateNoPlanMachineDto {
+  client_id: string;
+
   active_plan: boolean;
 
   @IsNotEmpty()

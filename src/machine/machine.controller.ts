@@ -8,12 +8,14 @@ import {
   Delete,
   ValidationPipe,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { MachineService } from './machine.service';
 import { CreateMachineDto } from './dto/create-machine.dto';
 import { UpdateMachineDto } from './dto/update-machine.dto';
 import { Paginate, PaginateQuery } from 'nestjs-paginate';
 import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
 @Controller('machine')
 export class MachineController {
@@ -21,7 +23,11 @@ export class MachineController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post()
-  create(@Body(new ValidationPipe()) createMachineDto: CreateMachineDto) {
+  create(
+    @Body(new ValidationPipe()) createMachineDto: CreateMachineDto,
+    @Req() request: Request,
+  ) {
+    createMachineDto.client_id = request.user['client'];
     return this.machineService.create(createMachineDto);
   }
 

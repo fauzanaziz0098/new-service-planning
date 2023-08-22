@@ -17,6 +17,9 @@ export class PlanningProduction {
   id: number;
 
   @Column()
+  client_id: string;
+
+  @Column()
   active_plan: boolean;
 
   @ManyToOne(() => Machine, (machine) => machine.planningProduction)

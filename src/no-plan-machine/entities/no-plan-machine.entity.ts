@@ -15,6 +15,9 @@ export class NoPlanMachine {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column()
+  client_id: string;
+
   @ManyToOne(() => Shift, (shift) => shift.no_plan_machine_id, {
     onDelete: 'CASCADE',
   })

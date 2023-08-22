@@ -15,6 +15,9 @@ export class Shift {
   id: number;
 
   @Column()
+  client_id: string;
+
+  @Column()
   name: string;
 
   @Column({ type: 'time' })

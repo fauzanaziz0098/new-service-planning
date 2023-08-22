@@ -213,11 +213,12 @@ export class PlanningProductionService {
           planning_total: planningProduction.total,
           product_cycle_time: product.cycle_time,
           production_qty_actual: planningProduction.qty_per_hour,
-          time_start: now.format('HH:MM:SS'),
+          time_start: now.format('HH:mm:ss'),
           time_end: null,
           machine_name: machine.name,
           planning_date_time_in: planningProduction.date_time_in,
           planning_date_time_out: planningProduction.date_time_out,
+          client_id: createPlanningProductionDto.client_id,
         });
         return planningProduction;
       }
@@ -248,20 +249,21 @@ export class PlanningProductionService {
         const planningProduction = await this.planningProductionRepository.save(
           createPlanningProductionDto,
         );
-        const now = moment();
-        await this.planningProductionReportRepository.save({
-          product_part_name: product.part_name,
-          product_part_number: product.part_number,
-          qty_planning: planningProduction.qty_planning,
-          planning_total: planningProduction.total,
-          product_cycle_time: product.cycle_time,
-          production_qty_actual: planningProduction.qty_per_hour,
-          time_start: now.format('HH:MM:SS'),
-          time_end: null,
-          machine_name: machine.name,
-          planning_date_time_in: planningProduction.date_time_in,
-          planning_date_time_out: planningProduction.date_time_out,
-        });
+        // const now = moment();
+        // await this.planningProductionReportRepository.save({
+        //   product_part_name: product.part_name,
+        //   product_part_number: product.part_number,
+        //   qty_planning: planningProduction.qty_planning,
+        //   planning_total: planningProduction.total,
+        //   product_cycle_time: product.cycle_time,
+        //   production_qty_actual: planningProduction.qty_per_hour,
+        //   time_start: now.format('HH:mm:ss'),
+        //   time_end: null,
+        //   machine_name: machine.name,
+        //   planning_date_time_in: planningProduction.date_time_in,
+        //   planning_date_time_out: planningProduction.date_time_out,
+        //   client_id: createPlanningProductionDto.client_id,
+        // });
         return planningProduction;
       }
       return new HttpException('Out Of Shift', HttpStatus.BAD_REQUEST);
@@ -284,7 +286,7 @@ export class PlanningProductionService {
       const now = moment();
       await this.planningProductionReportRepository.update(
         planningProductionReport.id,
-        { time_end: now.format('HH:MM:SS') },
+        { time_end: now.format('HH:mm:ss') },
       );
     }
 
@@ -296,8 +298,11 @@ export class PlanningProductionService {
     const nextPlan = await this.planningProductionRepository.findOne({
       where: { id: MoreThan(activePlan.id) },
       order: { id: 'asc' },
+      relations: ['product', 'machine'],
     });
     if (nextPlan) {
+      const machine = await this.machineService.findOne(+nextPlan.machine.id);
+      const product = await this.productService.findOne(+nextPlan.product.id);
       if (nextPlan.dandory_time != 0) {
         await this.planningProductionRepository.update(activePlan.id, {
           // active_plan: false,
@@ -314,6 +319,23 @@ export class PlanningProductionService {
           });
           const newNextPlan = this.planningProductionRepository.findOne({
             where: { id: nextPlan.id },
+          });
+
+          //report
+          const now = moment();
+          await this.planningProductionReportRepository.save({
+            product_part_name: product.part_name,
+            product_part_number: product.part_number,
+            qty_planning: nextPlan.qty_planning,
+            planning_total: nextPlan.total,
+            product_cycle_time: product.cycle_time,
+            production_qty_actual: nextPlan.qty_per_hour,
+            time_start: now.format('HH:mm:ss'),
+            time_end: null,
+            machine_name: machine.name,
+            planning_date_time_in: nextPlan.date_time_in,
+            planning_date_time_out: nextPlan.date_time_out,
+            client_id: nextPlan.client_id,
           });
           return newNextPlan;
         }, 60000 * nextPlan.dandory_time);

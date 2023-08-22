@@ -4,6 +4,8 @@ import { Product } from 'src/product/entities/product.entity';
 import { Shift } from 'src/shift/entities/shift.entity';
 
 export class CreatePlanningProductionDto {
+  client_id: string;
+
   active_plan: boolean;
 
   @IsNotEmpty()

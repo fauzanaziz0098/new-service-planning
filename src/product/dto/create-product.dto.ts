@@ -1,6 +1,8 @@
 import { IsNotEmpty } from 'class-validator';
 
 export class CreateProductDto {
+  client_id: string;
+
   @IsNotEmpty()
   part_name: string;
 

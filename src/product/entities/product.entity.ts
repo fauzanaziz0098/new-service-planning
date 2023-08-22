@@ -13,6 +13,9 @@ export class Product {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column()
+  client_id: string;
+
   @Column({ unique: true })
   part_name: string;
 

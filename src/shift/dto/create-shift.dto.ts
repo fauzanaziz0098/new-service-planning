@@ -1,5 +1,7 @@
 import { IsNotEmpty } from 'class-validator';
 export class CreateShiftDto {
+  client_id: string;
+
   @IsNotEmpty()
   name: string;
 
