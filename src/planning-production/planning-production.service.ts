@@ -16,8 +16,6 @@ import { VariablePlanningProduction } from 'src/interface/variable-loss-time.int
 import { ShiftService } from 'src/shift/shift.service';
 import { MachineService } from 'src/machine/machine.service';
 import { ProductService } from 'src/product/product.service';
-import { PlanningProductionReport } from '../planning-production-report/entities/planning-production-report.entity';
-import { CreatePlanningProductionReportDto } from '../planning-production-report/dto/create-planning-production-report.dto';
 import * as moment from 'moment';
 
 @Injectable()
@@ -26,8 +24,6 @@ export class PlanningProductionService {
   constructor(
     @InjectRepository(PlanningProduction)
     private readonly planningProductionRepository: Repository<PlanningProduction>,
-    @InjectRepository(PlanningProductionReport)
-    private readonly planningProductionReportRepository: Repository<PlanningProductionReport>,
     @Inject(forwardRef(() => NoPlanMachineService))
     private noPlanMachineService: NoPlanMachineService,
     @Inject(forwardRef(() => ShiftService))
@@ -180,98 +176,28 @@ export class PlanningProductionService {
 
     // jika tidak ada plan yang aktif dan tidak ada dandory time, AKTIF
     if (!isActivePlan) {
-      const noPlanMachine = await this.noPlanMachineService.findOneByShift(
-        createPlanningProductionDto.shift,
-      );
-      let totalNoPlanMachine = null;
-      noPlanMachine.map((res) => {
-        totalNoPlanMachine += res.total;
-      });
       createPlanningProductionDto.active_plan = true;
+      createPlanningProductionDto.date_time_in = moment().toDate();
+      createPlanningProductionDto.total_time_planning = Math.round(
+        (product.cycle_time * createPlanningProductionDto.qty_planning) / 60,
+      );
 
-      if (
-        (await this.convertTime(timeIn)) >= shiftStart &&
-        (await this.convertTime(timeOut)) <= shiftEnd
-      ) {
-        // selisih waktu masuk dan keluar dalam menit
-        const differenceTime =
-          (await this.convertTime(timeOut)) - (await this.convertTime(timeIn));
-
-        createPlanningProductionDto.total = Math.round(differenceTime / 60) + 1;
-        const qty =
-          createPlanningProductionDto.qty_planning /
-          (differenceTime - totalNoPlanMachine);
-        createPlanningProductionDto.qty_per_minute = Math.round(qty);
-        createPlanningProductionDto.qty_per_hour = Math.round(qty * 60);
-        // createPlanningProductionDto.qty_per_hour = Math.round( //Note: Format mtm qty_per_hour
-        //   createPlanningProductionDto.qty_planning / (differenceTime / 60),
-        // );
-        createPlanningProductionDto.dandory_time = null;
-        const planningProduction = await this.planningProductionRepository.save(
-          createPlanningProductionDto,
-        );
-        const now = moment();
-        await this.planningProductionReportRepository.save({
-          product_part_name: product.part_name,
-          product_part_number: product.part_number,
-          qty_planning: planningProduction.qty_planning,
-          planning_total: planningProduction.total,
-          product_cycle_time: product.cycle_time,
-          production_qty_actual: planningProduction.qty_per_hour,
-          time_start: now.format('HH:mm:ss'),
-          time_end: null,
-          machine_name: machine.name,
-          planning_date_time_in: planningProduction.date_time_in,
-          planning_date_time_out: planningProduction.date_time_out,
-          client_id: createPlanningProductionDto.client_id,
-        });
-        return planningProduction;
-      }
-      return new HttpException('Out Of Shift', HttpStatus.BAD_REQUEST);
+      createPlanningProductionDto.dandory_time = null;
+      const planningProduction = await this.planningProductionRepository.save(
+        createPlanningProductionDto,
+      );
+      return planningProduction;
 
       // Jika ada dandory time dan plan aktif,MASUK ANTRIAN
     } else {
-      const noPlanMachine = await this.noPlanMachineService.findOneByShift(
-        createPlanningProductionDto.shift,
-      );
-      let totalNoPlanMachine = null;
-      noPlanMachine.map((res) => {
-        totalNoPlanMachine += res.total;
-      });
       createPlanningProductionDto.active_plan = false;
-      if (
-        (await this.convertTime(timeIn)) >= shiftStart &&
-        (await this.convertTime(timeOut)) <= shiftEnd
-      ) {
-        const differenceTime =
-          (await this.convertTime(timeOut)) - (await this.convertTime(timeIn));
-        createPlanningProductionDto.total = Math.round(differenceTime / 60) + 1;
-        const qty =
-          createPlanningProductionDto.qty_planning /
-          (differenceTime - totalNoPlanMachine);
-        createPlanningProductionDto.qty_per_minute = Math.round(qty);
-        createPlanningProductionDto.qty_per_hour = Math.round(qty * 60);
-        const planningProduction = await this.planningProductionRepository.save(
-          createPlanningProductionDto,
-        );
-        // const now = moment();
-        // await this.planningProductionReportRepository.save({
-        //   product_part_name: product.part_name,
-        //   product_part_number: product.part_number,
-        //   qty_planning: planningProduction.qty_planning,
-        //   planning_total: planningProduction.total,
-        //   product_cycle_time: product.cycle_time,
-        //   production_qty_actual: planningProduction.qty_per_hour,
-        //   time_start: now.format('HH:mm:ss'),
-        //   time_end: null,
-        //   machine_name: machine.name,
-        //   planning_date_time_in: planningProduction.date_time_in,
-        //   planning_date_time_out: planningProduction.date_time_out,
-        //   client_id: createPlanningProductionDto.client_id,
-        // });
-        return planningProduction;
-      }
-      return new HttpException('Out Of Shift', HttpStatus.BAD_REQUEST);
+      createPlanningProductionDto.total_time_planning = Math.round(
+        (product.cycle_time * createPlanningProductionDto.qty_planning) / 60,
+      );
+      const planningProduction = await this.planningProductionRepository.save(
+        createPlanningProductionDto,
+      );
+      return planningProduction;
     }
   }
 
@@ -281,19 +207,6 @@ export class PlanningProductionService {
       where: { active_plan: true, client_id: client_id },
       relations: ['shift'],
     });
-
-    const planningProductionReport =
-      await this.planningProductionReportRepository.findOne({
-        where: { time_end: IsNull(), client_id: client_id },
-      });
-
-    if (planningProductionReport) {
-      const now = moment();
-      await this.planningProductionReportRepository.update(
-        planningProductionReport.id,
-        { time_end: now.format('HH:mm:ss') },
-      );
-    }
 
     if (!activePlan) {
       return 'No Active Plan';
@@ -305,6 +218,29 @@ export class PlanningProductionService {
       order: { id: 'asc' },
       relations: ['product', 'machine'],
     });
+
+    const noPlanMachine = await this.noPlanMachineService.findOneByShift(
+      activePlan.shift.id,
+    );
+    let totalNoPlanMachine = null;
+    noPlanMachine.map((res) => {
+      totalNoPlanMachine += res.total;
+    });
+
+    // convert time in ke menit
+    const timeIn = new Date(activePlan.date_time_in).toLocaleTimeString(
+      'it-IT',
+    );
+
+    // convert time out ke menit
+    const activePlanDateTimeOut = moment().toDate();
+    const timeOut = new Date(activePlanDateTimeOut).toLocaleTimeString('it-IT');
+    // selisih waktu masuk dan keluar dalam menit
+    const differenceTime =
+      (await this.convertTime(timeOut)) - (await this.convertTime(timeIn));
+
+    const qty = activePlan.qty_planning / (differenceTime - totalNoPlanMachine);
+
     if (nextPlan) {
       const machine = await this.machineService.findOne(
         +nextPlan.machine.id,
@@ -318,11 +254,16 @@ export class PlanningProductionService {
         await this.planningProductionRepository.update(activePlan.id, {
           // active_plan: false,
           dandory_time: -1,
+          date_time_out: activePlanDateTimeOut,
+          total_time_actual: differenceTime,
+          qty_per_minute: parseFloat(qty.toFixed(2)),
+          qty_per_hour: Math.round(qty * 60),
         });
         setTimeout(async () => {
           await this.planningProductionRepository.update(nextPlan.id, {
             active_plan: true,
             dandory_time: null,
+            date_time_in: moment().toDate(),
           });
           await this.planningProductionRepository.update(activePlan.id, {
             active_plan: false,
@@ -332,22 +273,6 @@ export class PlanningProductionService {
             where: { id: nextPlan.id, client_id: client_id },
           });
 
-          //report
-          const now = moment();
-          await this.planningProductionReportRepository.save({
-            product_part_name: product.part_name,
-            product_part_number: product.part_number,
-            qty_planning: nextPlan.qty_planning,
-            planning_total: nextPlan.total,
-            product_cycle_time: product.cycle_time,
-            production_qty_actual: nextPlan.qty_per_hour,
-            time_start: now.format('HH:mm:ss'),
-            time_end: null,
-            machine_name: machine.name,
-            planning_date_time_in: nextPlan.date_time_in,
-            planning_date_time_out: nextPlan.date_time_out,
-            client_id: nextPlan.client_id,
-          });
           return newNextPlan;
         }, 60000 * nextPlan.dandory_time);
         if (nextPlan.dandory_time != null) {
@@ -357,9 +282,14 @@ export class PlanningProductionService {
       } else {
         await this.planningProductionRepository.update(activePlan.id, {
           active_plan: false,
+          date_time_out: activePlanDateTimeOut,
+          total_time_actual: differenceTime,
+          qty_per_minute: parseFloat(qty.toFixed(2)),
+          qty_per_hour: Math.round(qty * 60),
         });
         await this.planningProductionRepository.update(nextPlan.id, {
           active_plan: true,
+          date_time_in: moment().toDate(),
         });
         const newNextPlan = this.planningProductionRepository.findOne({
           where: { id: nextPlan.id, client_id },
@@ -369,6 +299,10 @@ export class PlanningProductionService {
     }
     await this.planningProductionRepository.update(activePlan.id, {
       active_plan: false,
+      date_time_out: activePlanDateTimeOut,
+      total_time_actual: differenceTime,
+      qty_per_minute: parseFloat(qty.toFixed(2)),
+      qty_per_hour: Math.round(qty * 60),
     });
     // return 'All Plan In Queue Has Been Finished';
     return 'No Plan In Queue, No Active Plan';

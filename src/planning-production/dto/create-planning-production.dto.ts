@@ -31,9 +31,14 @@ export class CreatePlanningProductionDto {
 
   qty_reject: number;
 
-  total: number;
+  total_time_actual: number;
+
+  total_time_planning: number;
 
   remark: string;
 
   dandory_time: number;
+
+  @IsNotEmpty()
+  user: string;
 }

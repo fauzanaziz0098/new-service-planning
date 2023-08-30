@@ -40,26 +40,32 @@ export class PlanningProduction {
   @Column({ default: 0 })
   qty_per_hour: number;
 
-  @Column({ default: 0 })
+  @Column('float', { default: 0 })
   qty_per_minute: number;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamp', nullable: true })
   date_time_in: Date;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamp', nullable: true })
   date_time_out: Date;
 
   @Column({ default: 0 })
   qty_reject: number;
 
   @Column({ default: 0 })
-  total: number;
+  total_time_actual: number;
+
+  @Column({ default: 0 })
+  total_time_planning: number;
 
   @Column({ nullable: true })
   remark: string;
 
   @Column({ nullable: true })
   dandory_time: number;
+
+  @Column()
+  user: string;
 
   @CreateDateColumn()
   created_at: Date;
