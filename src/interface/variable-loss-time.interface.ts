@@ -3,7 +3,8 @@ export interface VariablePlanningProduction {
   mc_idle: boolean[];
   mc_stop: boolean[];
   CauseLS: number[];
-  OperatorId: number[];
+  OperatorId: string[];
+  clientId: string[];
   ShiftName: string[];
   qty_actual: number[];
   qty_hour: number[];

@@ -89,8 +89,11 @@ export class PlanningProductionService {
     const topicSplit = topic.split(':')[0];
     delete message.qty_actual;
     delete message.qty_hour;
-    message.OperatorId = [1];
+    console.log(message);
+
+    message.OperatorId = [activePlanProduction.user];
     message.ShiftName = [activePlanProduction?.shift?.name ?? ''];
+    message.clientId = [activePlanProduction.client_id];
     const sendVariable = JSON.stringify(message);
     if (activePlanProduction) {
       this.client.publish(
