@@ -1,9 +1,11 @@
 export class CreatePlanningProductionReportDto {
   client_id: string;
 
-  time_start?: string;
+  time_start?: any;
 
-  time_end?: string;
+  time_end?: any;
+
+  shift: string;
 
   product_part_name: string;
 
@@ -13,6 +15,8 @@ export class CreatePlanningProductionReportDto {
 
   machine_name: string;
 
+  machine_number: number;
+
   qty_planning: number;
 
   planning_date_time_in?: Date;
@@ -21,5 +25,5 @@ export class CreatePlanningProductionReportDto {
 
   planning_total: number;
 
-  production_qty_actual: number;
+  // production_qty_actual: number;
 }

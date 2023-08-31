@@ -16,6 +16,7 @@ import { PlanningProductionReport } from '../planning-production-report/entities
     forwardRef(() => ShiftModule),
     forwardRef(() => MachineModule),
     forwardRef(() => ProductModule),
+    forwardRef(() => PlanningProductionReport),
   ],
   controllers: [PlanningProductionController],
   providers: [PlanningProductionService],
