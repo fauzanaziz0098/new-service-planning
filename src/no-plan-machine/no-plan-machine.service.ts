@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { NoPlanMachine } from './entities/no-plan-machine.entity';
 import { Repository } from 'typeorm';
 import { ShiftService } from 'src/shift/shift.service';
+import * as moment from 'moment';
 
 @Injectable()
 export class NoPlanMachineService {
@@ -31,6 +32,31 @@ export class NoPlanMachineService {
     const timeIn = await this.convertTime(createNoPlanMachineDto.time_in);
     const timeOut = await this.convertTime(createNoPlanMachineDto.time_out);
 
+    const noPlanInDayExist = await this.noPlanMachineRepository.find({
+      where: { day: createNoPlanMachineDto.day },
+    });
+
+    noPlanInDayExist.forEach((item) => {
+      const timeInCreate = moment(createNoPlanMachineDto.time_in, 'HH:mm:ss');
+      const timeOutCreate = moment(createNoPlanMachineDto.time_out, 'HH:mm:ss');
+
+      const timeInItem = moment(item.time_in, 'HH:mm:ss');
+      const timeOutItem = moment(item.time_out, 'HH:mm:ss');
+
+      if (createNoPlanMachineDto.day === item.day) {
+        if (
+          (timeInCreate.isSameOrBefore(timeOutItem) &&
+            timeInCreate.isSameOrAfter(timeInItem)) ||
+          (timeOutCreate.isSameOrAfter(timeInItem) &&
+            timeOutCreate.isSameOrBefore(timeOutItem))
+        ) {
+          throw new HttpException(
+            'The entered time is between the no plan times on the same day',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+    });
     if (
       timeIn >= timeStart &&
       timeIn <= timeEnd &&
@@ -44,7 +70,10 @@ export class NoPlanMachineService {
         );
         return noPlanMachine;
       }
-      throw new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Time In Greater Than Time Out',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     throw new HttpException('Out Range Shift', HttpStatus.BAD_REQUEST);
   }

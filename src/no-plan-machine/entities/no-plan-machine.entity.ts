@@ -10,6 +10,16 @@ import {
   ManyToOne,
 } from 'typeorm';
 
+export enum TypeDays {
+  SUNDAY = 'sunday',
+  MONDAY = 'monday',
+  TUESDAY = 'tuesday',
+  WEDNESDAY = 'wednesday',
+  THURSDAY = 'thrusday',
+  FRIDAY = 'friday',
+  SATURDAY = 'saturday',
+}
+
 @Entity()
 export class NoPlanMachine {
   @PrimaryGeneratedColumn()
@@ -32,6 +42,11 @@ export class NoPlanMachine {
 
   @Column({ default: 0 })
   total: number;
+
+  @Column({
+    enum: TypeDays,
+  })
+  day: TypeDays;
 
   @CreateDateColumn()
   created_At: Date;

@@ -1,5 +1,6 @@
 import { Shift } from 'src/shift/entities/shift.entity';
 import { IsNotEmpty } from 'class-validator';
+import { TypeDays } from '../entities/no-plan-machine.entity';
 
 export class CreateNoPlanMachineDto {
   client_id: string;
@@ -16,4 +17,7 @@ export class CreateNoPlanMachineDto {
   time_out: Date;
 
   total: number;
+
+  @IsNotEmpty()
+  day: TypeDays;
 }
