@@ -34,6 +34,7 @@ export class NoPlanMachineService {
 
     const noPlanInDayExist = await this.noPlanMachineRepository.find({
       where: { day: createNoPlanMachineDto.day },
+      relations: ['shift'],
     });
 
     noPlanInDayExist.forEach((item) => {
@@ -43,7 +44,10 @@ export class NoPlanMachineService {
       const timeInItem = moment(item.time_in, 'HH:mm:ss');
       const timeOutItem = moment(item.time_out, 'HH:mm:ss');
 
-      if (createNoPlanMachineDto.day === item.day) {
+      if (
+        createNoPlanMachineDto.day === item.day &&
+        +createNoPlanMachineDto.shift == item.shift.id
+      ) {
         if (
           (timeInCreate.isSameOrBefore(timeOutItem) &&
             timeInCreate.isSameOrAfter(timeInItem)) ||
