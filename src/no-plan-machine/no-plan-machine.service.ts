@@ -159,17 +159,20 @@ export class NoPlanMachineService {
     return minute;
   }
 
-  async findOneByShift(shiftId: any) {
+  async findOneByShift(shiftId: any, day: string) {
     const noPlanMachine = await this.noPlanMachineRepository
       .createQueryBuilder('no_plan_machine')
       .leftJoinAndSelect('no_plan_machine.shift', 'shift')
       .where('shift.id = :id', {
         id: shiftId,
       })
+      .andWhere('day = :day', {
+        day: day,
+      })
       .getMany();
-    if (noPlanMachine) {
+    if (noPlanMachine.length > 0) {
       return noPlanMachine;
     }
-    throw new HttpException('No Plan Machine Not Found', HttpStatus.NOT_FOUND);
+    return [];
   }
 }

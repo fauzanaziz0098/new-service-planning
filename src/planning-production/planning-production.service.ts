@@ -91,9 +91,9 @@ export class PlanningProductionService {
     delete message.qty_hour;
     console.log(message);
 
-    message.OperatorId = [activePlanProduction.user];
+    message.OperatorId = [activePlanProduction?.user];
     message.ShiftName = [activePlanProduction?.shift?.name ?? ''];
-    message.clientId = [activePlanProduction.client_id];
+    message.clientId = [activePlanProduction?.client_id];
     const sendVariable = JSON.stringify(message);
     if (activePlanProduction) {
       this.client.publish(
@@ -222,13 +222,17 @@ export class PlanningProductionService {
       relations: ['product', 'machine'],
     });
 
+    const today = moment().format('dddd').toLocaleLowerCase();
     const noPlanMachine = await this.noPlanMachineService.findOneByShift(
       activePlan.shift.id,
+      today,
     );
     let totalNoPlanMachine = null;
     noPlanMachine.map((res) => {
       totalNoPlanMachine += res.total;
     });
+
+    console.log(totalNoPlanMachine);
 
     // convert time in ke menit
     const timeIn = new Date(activePlan.date_time_in).toLocaleTimeString(
