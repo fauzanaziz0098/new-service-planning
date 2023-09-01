@@ -54,18 +54,4 @@ export class PlanningProductionController {
       req.user['client'],
     );
   }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Patch(':id')
-  update(
-    @Param('id') id: number,
-    @Body() updatePlanningProductionDto: UpdatePlanningProductionDto,
-  ) {
-    console.log(updatePlanningProductionDto);
-
-    return this.planningProductionService.update(
-      +id,
-      updatePlanningProductionDto,
-    );
-  }
 }

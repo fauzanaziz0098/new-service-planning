@@ -354,26 +354,6 @@ export class PlanningProductionService {
     throw new HttpException('No Active Plan', HttpStatus.NOT_FOUND);
   }
 
-  async update(
-    id: number,
-    updatePlanningProductionDto: UpdatePlanningProductionDto,
-  ) {
-    const planning = await this.planningProductionRepository.findOne({
-      where: { id: id },
-    });
-    if (planning) {
-      if (planning.active_plan === true) {
-        throw new HttpException('Plan Is Running Now', HttpStatus.BAD_REQUEST);
-      }
-      await this.planningProductionRepository.update(
-        id,
-        updatePlanningProductionDto,
-      );
-      return 'Plan Updated';
-    }
-    throw new HttpException('Planning Not Found', HttpStatus.BAD_REQUEST);
-  }
-
   async convertTime(time: any) {
     const timeSplit = time.split(':');
     const minute = +timeSplit[0] * 60 + +timeSplit[1];
