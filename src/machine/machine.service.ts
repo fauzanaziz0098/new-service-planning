@@ -56,9 +56,9 @@ export class MachineService {
     return allMachine;
   }
 
-  async findOne(id: number, client_id: string) {
+  async findOne(id: number) {
     const machine = await this.machineRepository.findOne({
-      where: { id: id, client_id },
+      where: { id: id },
     });
     if (machine) {
       return machine;

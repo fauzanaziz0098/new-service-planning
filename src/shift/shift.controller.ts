@@ -32,8 +32,8 @@ export class ShiftController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
-  findAll() {
-    return this.shiftService.findAll();
+  findAll(@Req() request: Request) {
+    return this.shiftService.findAll(request.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))

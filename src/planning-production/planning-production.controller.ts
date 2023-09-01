@@ -42,12 +42,30 @@ export class PlanningProductionController {
       req.user['client'],
     );
   }
+  @Get('active-plan-api')
+  getActiveAPI(client: string) {
+    return this.planningProductionService.getPlanningProduction(client);
+  }
 
   @UseGuards(AuthGuard('jwt'))
   @Post('stop-planning-production')
   stopPlanning(@Req() req: Request) {
     return this.planningProductionService.stopPlanningProduction(
       req.user['client'],
+    );
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(':id')
+  update(
+    @Param('id') id: number,
+    @Body() updatePlanningProductionDto: UpdatePlanningProductionDto,
+  ) {
+    console.log(updatePlanningProductionDto);
+
+    return this.planningProductionService.update(
+      +id,
+      updatePlanningProductionDto,
     );
   }
 }

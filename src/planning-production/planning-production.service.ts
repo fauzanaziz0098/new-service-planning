@@ -130,7 +130,6 @@ export class PlanningProductionService {
     // cek machine
     const machine = await this.machineService.findOne(
       +createPlanningProductionDto.machine,
-      createPlanningProductionDto.client_id,
     );
     // cek product
     const product = await this.productService.findOne(
@@ -249,10 +248,7 @@ export class PlanningProductionService {
     const qty = activePlan.qty_planning / (differenceTime - totalNoPlanMachine);
 
     if (nextPlan) {
-      const machine = await this.machineService.findOne(
-        +nextPlan.machine.id,
-        nextPlan.client_id,
-      );
+      const machine = await this.machineService.findOne(+nextPlan.machine.id);
       const product = await this.productService.findOne(
         +nextPlan.product.id,
         nextPlan.client_id,
@@ -331,6 +327,26 @@ export class PlanningProductionService {
       return activePlanProduction;
     }
     throw new HttpException('No Active Plan', HttpStatus.NOT_FOUND);
+  }
+
+  async update(
+    id: number,
+    updatePlanningProductionDto: UpdatePlanningProductionDto,
+  ) {
+    const planning = await this.planningProductionRepository.findOne({
+      where: { id: id },
+    });
+    if (planning) {
+      if (planning.active_plan === true) {
+        throw new HttpException('Plan Is Running Now', HttpStatus.BAD_REQUEST);
+      }
+      await this.planningProductionRepository.update(
+        id,
+        updatePlanningProductionDto,
+      );
+      return 'Plan Updated';
+    }
+    throw new HttpException('Planning Not Found', HttpStatus.BAD_REQUEST);
   }
 
   async convertTime(time: any) {
