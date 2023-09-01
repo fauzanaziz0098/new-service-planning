@@ -48,4 +48,8 @@ export class PlanningProductionReportService {
 
     return paginate<PlanningProductionReport>(query, queryBuilder, config);
   }
+
+  async create(
+    createPlanningProductionReportDto: CreatePlanningProductionReportDto,
+  ) {}
 }

@@ -9,6 +9,7 @@ import {
   ValidationPipe,
   UseGuards,
   Req,
+  SetMetadata,
 } from '@nestjs/common';
 import { MachineService } from './machine.service';
 import { CreateMachineDto } from './dto/create-machine.dto';
@@ -16,12 +17,15 @@ import { UpdateMachineDto } from './dto/update-machine.dto';
 import { Paginate, PaginateQuery } from 'nestjs-paginate';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
+import { PermissionsGuard } from 'src/auth/guards/permission.guard';
 
 @Controller('machine')
 export class MachineController {
   constructor(private readonly machineService: MachineService) {}
 
   @UseGuards(AuthGuard('jwt'))
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['CREATE:MACHINE'])
   @Post()
   create(
     @Body(new ValidationPipe()) createMachineDto: CreateMachineDto,
@@ -32,6 +36,8 @@ export class MachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['VIEW:MACHINE'])
   @Get()
   findAll(@Paginate() query: PaginateQuery, @Req() req: Request) {
     return this.machineService.findAll(query, req.user['client']);
@@ -49,6 +55,8 @@ export class MachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['UPDATE:MACHINE'])
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -63,12 +71,16 @@ export class MachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['DELETE:MACHINE'])
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: Request) {
     return this.machineService.remove(+id, req.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['DELETE:MACHINE'])
   @Post('delete/many')
   async removeMany(@Body('ids') ids: string[], @Req() req: Request) {
     return this.machineService.removeMany(ids, req.user['client']);

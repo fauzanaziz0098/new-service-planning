@@ -8,6 +8,7 @@ import { ShiftModule } from 'src/shift/shift.module';
 import { MachineModule } from 'src/machine/machine.module';
 import { ProductModule } from 'src/product/product.module';
 import { PlanningProductionReport } from '../planning-production-report/entities/planning-production-report.entity';
+import { PlanningProductionReportModule } from 'src/planning-production-report/planning-production-report.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PlanningProductionReport } from '../planning-production-report/entities
     forwardRef(() => ShiftModule),
     forwardRef(() => MachineModule),
     forwardRef(() => ProductModule),
+    forwardRef(() => PlanningProductionReportModule),
   ],
   controllers: [PlanningProductionController],
   providers: [PlanningProductionService],

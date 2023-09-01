@@ -14,17 +14,20 @@ export class PlanningProductionReport {
   @Column()
   client_id: string;
 
-  @Column({ nullable: true })
-  time_start: string;
+  @Column({ nullable: true, type: 'time' })
+  time_start: Date;
 
-  @Column({ nullable: true })
-  time_end: string;
+  @Column({ nullable: true, type: 'time' })
+  time_end: Date;
 
   @Column()
   product_part_name: string;
 
   @Column()
   product_part_number: string;
+
+  @Column()
+  shift: string;
 
   @Column()
   product_cycle_time: number;
