@@ -133,7 +133,6 @@ export class PlanningProductionService {
     // cek machine
     const machine = await this.machineService.findOne(
       +createPlanningProductionDto.machine,
-      createPlanningProductionDto.client_id,
     );
     // cek product
     const product = await this.productService.findOne(
@@ -252,10 +251,7 @@ export class PlanningProductionService {
     const qty = activePlan.qty_planning / (differenceTime - totalNoPlanMachine);
 
     if (nextPlan) {
-      const machine = await this.machineService.findOne(
-        +nextPlan.machine.id,
-        nextPlan.client_id,
-      );
+      const machine = await this.machineService.findOne(+nextPlan.machine.id);
       const product = await this.productService.findOne(
         +nextPlan.product.id,
         nextPlan.client_id,

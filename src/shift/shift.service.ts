@@ -14,7 +14,7 @@ export class ShiftService {
 
   async create(createShiftDto: CreateShiftDto) {
     const existShift = await this.shiftRepository.findOne({
-      where: { name: createShiftDto.name },
+      where: { name: createShiftDto.name, client_id: createShiftDto.client_id },
     });
     if (!existShift) {
       const shift = this.shiftRepository.save(createShiftDto);
@@ -26,8 +26,8 @@ export class ShiftService {
     );
   }
 
-  findAll() {
-    return this.shiftRepository.find();
+  findAll(client_id: string) {
+    return this.shiftRepository.find({ where: { client_id: client_id } });
   }
 
   async findOne(id: number) {

@@ -42,6 +42,10 @@ export class PlanningProductionController {
       req.user['client'],
     );
   }
+  @Get('active-plan-api')
+  getActiveAPI(client: string) {
+    return this.planningProductionService.getPlanningProduction(client);
+  }
 
   @UseGuards(AuthGuard('jwt'))
   @Post('stop-planning-production')

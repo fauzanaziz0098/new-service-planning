@@ -51,7 +51,7 @@ export class MachineController {
 
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: Request) {
-    return this.machineService.findOne(+id, req.user['client']);
+    return this.machineService.findOne(+id);
   }
 
   @UseGuards(AuthGuard('jwt'))
