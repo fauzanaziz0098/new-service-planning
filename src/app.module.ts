@@ -12,6 +12,7 @@ import { ShiftModule } from './shift/shift.module';
 import { NoPlanMachineModule } from './no-plan-machine/no-plan-machine.module';
 import { PlanningProductionModule } from './planning-production/planning-production.module';
 import { PlanningProductionReportModule } from './planning-production-report/planning-production-report.module';
+import { PublicFunctionModule } from './public-function/public-function.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { PlanningProductionReportModule } from './planning-production-report/pla
     NoPlanMachineModule,
     PlanningProductionModule,
     PlanningProductionReportModule,
+    PublicFunctionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

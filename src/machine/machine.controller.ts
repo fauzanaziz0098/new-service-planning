@@ -32,7 +32,7 @@ export class MachineController {
     @Req() request: Request,
   ) {
     createMachineDto.client_id = request.user['client'];
-    return this.machineService.create(createMachineDto);
+    return this.machineService.create(createMachineDto, request.user);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -67,6 +67,7 @@ export class MachineController {
       +id,
       updateMachineDto,
       req.user['client'],
+      req.user,
     );
   }
 
@@ -75,7 +76,7 @@ export class MachineController {
   @SetMetadata('permissions', ['DELETE:MACHINE'])
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: Request) {
-    return this.machineService.remove(+id, req.user['client']);
+    return this.machineService.remove(+id, req.user['client'], req.user);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -83,6 +84,6 @@ export class MachineController {
   @SetMetadata('permissions', ['DELETE:MACHINE'])
   @Post('delete/many')
   async removeMany(@Body('ids') ids: string[], @Req() req: Request) {
-    return this.machineService.removeMany(ids, req.user['client']);
+    return this.machineService.removeMany(ids, req.user['client'], req.user);
   }
 }

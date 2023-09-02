@@ -1,4 +1,10 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { CreateMachineDto } from './dto/create-machine.dto';
 import { UpdateMachineDto } from './dto/update-machine.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,19 +16,30 @@ import {
   PaginateQuery,
   paginate,
 } from 'nestjs-paginate';
+import axios from 'axios';
+import { PublicFunctionService } from 'src/public-function/public-function.service';
 
 @Injectable()
 export class MachineService {
   constructor(
     @InjectRepository(Machine)
     private readonly machineRepository: Repository<Machine>,
+    @Inject(forwardRef(() => PublicFunctionService))
+    private publicFunctionService: PublicFunctionService,
   ) {}
-  async create(createMachineDto: CreateMachineDto) {
+  async create(createMachineDto: CreateMachineDto, user: any) {
     const existMachine = await this.machineRepository.findOne({
       where: { name: createMachineDto.name },
     });
     if (!existMachine) {
       const machine = this.machineRepository.save(createMachineDto);
+      await axios.post(`${process.env.SERVICE_REPORT}/activity`, {
+        user: user.email,
+        client: user.client ?? null,
+        category: 'machine',
+        methode: 'post',
+        description: `Pembuatan Machine (${createMachineDto.name} - ${createMachineDto.number})`,
+      });
       return machine;
     }
     throw new HttpException(
@@ -70,6 +87,7 @@ export class MachineService {
     id: number,
     updateMachineDto: UpdateMachineDto,
     client_id: string,
+    user: any,
   ) {
     const machine = await this.machineRepository.findOne({
       where: { id: id, client_id },
@@ -79,17 +97,38 @@ export class MachineService {
       const updatedMachine = await this.machineRepository.findOne({
         where: { id: id },
       });
+      const infoCahngeData = await this.publicFunctionService.compareObjects(
+        machine,
+        updateMachineDto,
+      );
+      if (infoCahngeData.length > 0) {
+        await axios.post(`${process.env.SERVICE_REPORT}/activity`, {
+          user: user.email,
+          client: user.client ?? null,
+          category: 'machine',
+          methode: 'patch',
+          description: `Perubahan data pada Machine (${machine.name} - ${machine.number})`,
+          items: infoCahngeData,
+        });
+      }
       return updatedMachine;
     }
     throw new HttpException('Machine Not Found', HttpStatus.NOT_FOUND);
   }
 
-  async remove(id: number, client_id: string) {
+  async remove(id: number, client_id: string, user: any) {
     const machine = await this.machineRepository.findOne({
       where: { id: id, client_id },
     });
     if (machine) {
       await this.machineRepository.delete(id);
+      await axios.post(`${process.env.SERVICE_REPORT}/activity`, {
+        user: user.email,
+        client: user.client ?? null,
+        category: 'machine',
+        methode: 'delete',
+        description: `Menghapus Machine (${machine.name} - ${machine.number})`,
+      });
       return `${machine.name} deleted`;
     }
     throw new HttpException('Machine Not Found', HttpStatus.NOT_FOUND);
@@ -105,13 +144,21 @@ export class MachineService {
       .getMany();
   }
 
-  async removeMany(ids: string[], client_id: string) {
+  async removeMany(ids: string[], client_id: string, user: any) {
     if (typeof ids === 'string') {
       ids = [`${ids}`];
     }
 
     const machineIds: Machine[] = await this.findMany(ids, client_id);
+    const result = machineIds.map((item) => item.name).join(', ');
     await this.machineRepository.remove(machineIds);
+    await axios.post(`${process.env.SERVICE_REPORT}/activity`, {
+      user: user.email,
+      client: user.client ?? null,
+      category: 'machine',
+      methode: 'delete',
+      description: `Menghapus Machine (${result})`,
+    });
     return 'Machine has been Deleted Successfully';
   }
 }
