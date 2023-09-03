@@ -2,6 +2,7 @@ import { IsNotEmpty, IsNumber } from 'class-validator';
 import { Machine } from 'src/machine/entities/machine.entity';
 import { Product } from 'src/product/entities/product.entity';
 import { Shift } from 'src/shift/entities/shift.entity';
+import { PlanningProduction } from '../entities/planning-production.entity';
 
 export class CreatePlanningProductionDto {
   client_id: string;
@@ -41,4 +42,8 @@ export class CreatePlanningProductionDto {
 
   @IsNotEmpty()
   user: string;
+
+  // additional
+  time_in?: Date;
+  time_out?: Date;
 }

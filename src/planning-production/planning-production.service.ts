@@ -18,6 +18,7 @@ import { MachineService } from 'src/machine/machine.service';
 import { ProductService } from 'src/product/product.service';
 import * as moment from 'moment';
 import { PlanningProductionReportService } from 'src/planning-production-report/planning-production-report.service';
+import { NoPlanMachineAdditionalService } from 'src/no-plan-machine-additional/no-plan-machine-additional.service';
 
 @Injectable()
 export class PlanningProductionService {
@@ -35,6 +36,8 @@ export class PlanningProductionService {
     private productService: ProductService,
     @Inject(forwardRef(() => PlanningProductionReportService))
     private planningProductionReportService: PlanningProductionReportService,
+    @Inject(forwardRef(() => NoPlanMachineAdditionalService))
+    private noPlanMachineAdditionalService: NoPlanMachineAdditionalService,
   ) {
     this.initializeMqttClient();
   }
@@ -191,6 +194,24 @@ export class PlanningProductionService {
       const planningProduction = await this.planningProductionRepository.save(
         createPlanningProductionDto,
       );
+
+      // buat no plan additional
+      if (
+        createPlanningProductionDto.time_in &&
+        createPlanningProductionDto.time_out
+      ) {
+        try {
+          const noPlanAdditional =
+            await this.noPlanMachineAdditionalService.createAdditional(
+              createPlanningProductionDto.time_in,
+              createPlanningProductionDto.time_out,
+              createPlanningProductionDto.client_id,
+              planningProduction.id,
+            );
+        } catch (error) {
+          return error;
+        }
+      }
       return planningProduction;
 
       // Jika ada dandory time dan plan aktif,MASUK ANTRIAN
@@ -202,6 +223,23 @@ export class PlanningProductionService {
       const planningProduction = await this.planningProductionRepository.save(
         createPlanningProductionDto,
       );
+      // buat no plan additional
+      if (
+        createPlanningProductionDto.time_in &&
+        createPlanningProductionDto.time_out
+      ) {
+        try {
+          const noPlanAdditional =
+            await this.noPlanMachineAdditionalService.createAdditional(
+              createPlanningProductionDto.time_in,
+              createPlanningProductionDto.time_out,
+              createPlanningProductionDto.client_id,
+              planningProduction.id,
+            );
+        } catch (error) {
+          return error;
+        }
+      }
       return planningProduction;
     }
   }
@@ -229,12 +267,17 @@ export class PlanningProductionService {
       activePlan.shift.id,
       today,
     );
-    let totalNoPlanMachine = null;
+
+    // cek no plan additional
+    const noPlanMachineAdditional =
+      await this.noPlanMachineAdditionalService.findOne(activePlan.id);
+    const noPlanMachineAdditionalTotal = noPlanMachineAdditional
+      ? noPlanMachineAdditional.total
+      : 0;
+    let totalNoPlanMachine = 0 + noPlanMachineAdditionalTotal;
     noPlanMachine.map((res) => {
       totalNoPlanMachine += res.total;
     });
-
-    console.log(totalNoPlanMachine);
 
     // convert time in ke menit
     const timeIn = new Date(activePlan.date_time_in).toLocaleTimeString(

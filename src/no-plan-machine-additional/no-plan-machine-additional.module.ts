@@ -13,5 +13,6 @@ import { PlanningProductionModule } from '../planning-production/planning-produc
   ],
   controllers: [NoPlanMachineAdditionalController],
   providers: [NoPlanMachineAdditionalService],
+  exports: [NoPlanMachineAdditionalService],
 })
 export class NoPlanMachineAdditionalModule {}

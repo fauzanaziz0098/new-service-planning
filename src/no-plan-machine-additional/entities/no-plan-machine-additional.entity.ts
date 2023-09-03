@@ -30,6 +30,9 @@ export class NoPlanMachineAdditional {
   @Column({ type: 'time' })
   time_out: Date;
 
+  @Column({ default: 0 })
+  total: number;
+
   @CreateDateColumn()
   created_at: Date;
 

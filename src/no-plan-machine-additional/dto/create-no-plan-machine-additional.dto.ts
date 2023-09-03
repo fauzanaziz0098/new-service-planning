@@ -4,7 +4,7 @@ import { PlanningProduction } from 'src/planning-production/entities/planning-pr
 export class CreateNoPlanMachineAdditionalDto {
   client_id: string;
 
-  @IsNotEmpty()
+  // @IsNotEmpty()
   planning_production: PlanningProduction;
 
   @IsNotEmpty()
@@ -12,4 +12,6 @@ export class CreateNoPlanMachineAdditionalDto {
 
   @IsNotEmpty()
   time_out: Date;
+
+  total: number;
 }
