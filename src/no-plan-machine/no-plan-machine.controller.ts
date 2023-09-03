@@ -38,8 +38,8 @@ export class NoPlanMachineController {
   @UseGuards(PermissionsGuard)
   @SetMetadata('permissions', ['VIEW:NOPLAN'])
   @Get()
-  findAll() {
-    return this.noPlanMachineService.findAll();
+  findAll(@Req() request: Request) {
+    return this.noPlanMachineService.findAll(request.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))

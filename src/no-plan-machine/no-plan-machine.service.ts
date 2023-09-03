@@ -33,7 +33,10 @@ export class NoPlanMachineService {
     const timeOut = await this.convertTime(createNoPlanMachineDto.time_out);
 
     const noPlanInDayExist = await this.noPlanMachineRepository.find({
-      where: { day: createNoPlanMachineDto.day },
+      where: {
+        day: createNoPlanMachineDto.day,
+        client_id: createNoPlanMachineDto.client_id,
+      },
       relations: ['shift'],
     });
 
@@ -82,8 +85,11 @@ export class NoPlanMachineService {
     throw new HttpException('Out Range Shift', HttpStatus.BAD_REQUEST);
   }
 
-  findAll() {
-    return this.noPlanMachineRepository.find({ relations: ['shift'] });
+  findAll(client_id: string) {
+    return this.noPlanMachineRepository.find({
+      where: { client_id: client_id },
+      relations: ['shift'],
+    });
   }
 
   async findOne(id: number) {

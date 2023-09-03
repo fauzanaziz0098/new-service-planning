@@ -21,5 +21,6 @@ import { PlanningProductionReportModule } from 'src/planning-production-report/p
   ],
   controllers: [PlanningProductionController],
   providers: [PlanningProductionService],
+  exports: [PlanningProductionService],
 })
 export class PlanningProductionModule {}
