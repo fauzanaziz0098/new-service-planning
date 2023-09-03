@@ -1,4 +1,10 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  forwardRef,
+  Inject,
+} from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,12 +16,15 @@ import {
   PaginateQuery,
   paginate,
 } from 'nestjs-paginate';
+import { PublicFunctionService } from 'src/public-function/public-function.service';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @Inject(forwardRef(() => PublicFunctionService))
+    private publicFunctionService: PublicFunctionService,
   ) {}
 
   async create(createProductDto: CreateProductDto) {
