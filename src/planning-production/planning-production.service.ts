@@ -397,6 +397,18 @@ export class PlanningProductionService {
     throw new HttpException('No Active Plan', HttpStatus.NOT_FOUND);
   }
 
+  async getLastPlanning(client_id: string) {
+    const lastPlan = await this.planningProductionRepository.findOne({
+      where: {
+        client_id: client_id,
+        active_plan: false,
+        date_time_out: Not(IsNull()),
+      },
+      order: { id: 'desc' },
+    });
+    return lastPlan;
+  }
+
   async convertTime(time: any) {
     const timeSplit = time.split(':');
     const minute = +timeSplit[0] * 60 + +timeSplit[1];
