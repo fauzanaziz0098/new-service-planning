@@ -57,7 +57,9 @@ export class NoPlanMachineController {
   update(
     @Param('id') id: string,
     @Body(new ValidationPipe()) updateNoPlanMachineDto: UpdateNoPlanMachineDto,
+    @Req() request: Request,
   ) {
+    updateNoPlanMachineDto.client_id = request.user['client'];
     return this.noPlanMachineService.update(+id, updateNoPlanMachineDto);
   }
 

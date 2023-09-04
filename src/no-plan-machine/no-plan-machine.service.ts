@@ -12,6 +12,7 @@ import { NoPlanMachine } from './entities/no-plan-machine.entity';
 import { Repository } from 'typeorm';
 import { ShiftService } from 'src/shift/shift.service';
 import * as moment from 'moment';
+import { PlanningProductionService } from 'src/planning-production/planning-production.service';
 
 @Injectable()
 export class NoPlanMachineService {
@@ -20,6 +21,8 @@ export class NoPlanMachineService {
     private readonly noPlanMachineRepository: Repository<NoPlanMachine>,
     @Inject(forwardRef(() => ShiftService))
     private shiftService: ShiftService,
+    @Inject(forwardRef(() => PlanningProductionService))
+    private planningProductionService: PlanningProductionService,
   ) {}
 
   async create(createNoPlanMachineDto: CreateNoPlanMachineDto) {
@@ -113,6 +116,23 @@ export class NoPlanMachineService {
         ? +updateNoPlanMachineDto.shift
         : +noPlanMachine.shift.id,
     );
+
+    // cek aktif plan dengan client_id
+    const today = moment().format('dddd').toLocaleLowerCase();
+    const activePlan =
+      await this.planningProductionService.getPlanningProduction(
+        updateNoPlanMachineDto.client_id,
+      );
+    if (
+      activePlan.shift.id == noPlanMachine.shift.id &&
+      today == noPlanMachine.day
+    ) {
+      throw new HttpException(
+        'No plan machine is using, cannot update',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     const timeStart = await this.convertTime(shift.time_start);
     const timeEnd = await this.convertTime(shift.time_end);
 
