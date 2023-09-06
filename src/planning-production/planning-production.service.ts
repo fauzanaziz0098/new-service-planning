@@ -255,6 +255,10 @@ export class PlanningProductionService {
       return 'No Active Plan';
     }
 
+    const lineStopBeforeStop = await this.initializeMqttClientSpesifikMachine(
+      activePlan.id,
+    );
+
     // cek plan berikutnya yang akan aktif
     const nextPlan = await this.planningProductionRepository.findOne({
       where: { id: MoreThan(activePlan.id), client_id },
@@ -413,5 +417,40 @@ export class PlanningProductionService {
     const timeSplit = time.split(':');
     const minute = +timeSplit[0] * 60 + +timeSplit[1];
     return minute;
+  }
+
+  async initializeMqttClientSpesifikMachine(machineId: number) {
+    const connectUrl = process.env.MQTT_CONNECTION;
+
+    this.client = mqtt.connect(connectUrl, {
+      clientId: `mqtt_nest_${Math.random().toString(16).slice(3)}`,
+      clean: true,
+      connectTimeout: 4000,
+      username: '',
+      password: '',
+      reconnectPeriod: 1000,
+    });
+
+    this.client.on('connect', () => {
+      console.log('MQTT client connected');
+    });
+
+    this.client.subscribe(`MC${machineId}:STOP:RPA`, { qos: 2 }, (err) => {
+      if (err) {
+        console.log(`Error subscribe topic : MC${machineId}:PLAN:RPA`, err);
+      }
+    });
+
+    this.client.on('message', (topic, message) => {
+      if (message) {
+        // this.publish();
+        return JSON.parse(message.toString());
+      }
+    });
+
+    this.client.on('error', (error) => {
+      console.log('Connection failed:', error);
+    });
+    this.client.end();
   }
 }
