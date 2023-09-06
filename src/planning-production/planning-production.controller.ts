@@ -42,8 +42,9 @@ export class PlanningProductionController {
       req.user['client'],
     );
   }
-  @Get('active-plan-api')
-  getActiveAPI(client: string) {
+
+  @Post('active-plan-api')
+  getActiveAPI(@Body('client') client: string) {
     return this.planningProductionService.getPlanningProduction(client);
   }
 
