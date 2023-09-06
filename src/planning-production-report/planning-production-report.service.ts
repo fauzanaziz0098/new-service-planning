@@ -51,5 +51,23 @@ export class PlanningProductionReportService {
 
   async create(
     createPlanningProductionReportDto: CreatePlanningProductionReportDto,
-  ) {}
+  ) {
+    // client_id: activePlan.client_id,
+    //   // SHIFT
+    //   shift: activePlan.shift.name,
+    //   time_start: activePlan.shift.time_start,
+    //   time_end: activePlan.shift.time_end,
+    //   // product
+    //   product_part_name: activePlan.product.part_name,
+    //   product_part_number: activePlan.product.part_number,
+    //   product_cycle_time: activePlan.product.cycle_time,
+    //   // MCHINE
+    //   machine_name: activePlan.machine.name,
+    //   machine_number: activePlan.machine.number,
+    //   // PLANNING
+    //   qty_planning: activePlan.qty_planning,
+    //   planning_date_time_in: activePlan.date_time_in,
+    //   planning_date_time_out: activePlanDateTimeOut,
+    //   planning_total: activePlan.total_time_planning,
+  }
 }

@@ -357,28 +357,14 @@ export class PlanningProductionService {
       qty_per_minute: parseFloat(qty.toFixed(2)),
       qty_per_hour: Math.round(qty * 60),
     });
-    // await this.planningProductionReportService.create({
-    //   client_id: activePlan.client_id,
-    //   // SHIFT
-    //   shift: activePlan.shift.name,
-    //   time_start: activePlan.shift.time_start,
-    //   time_end: activePlan.shift.time_end,
 
-    //   // product
-    //   product_part_name: activePlan.product.part_name,
-    //   product_part_number: activePlan.product.part_number,
-    //   product_cycle_time: activePlan.product.cycle_time,
+    // for create report
+    // activePlan.date_time_out = activePlanDateTimeOut;
+    // activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
+    // activePlan.qty_per_hour = Math.round(qty * 60);
+    // activePlan.total_time_actual: differenceTime;
+    // await this.planningProductionReportService.create({ planning: activePlan });
 
-    //   // MCHINE
-    //   machine_name: activePlan.machine.name,
-    //   machine_number: activePlan.machine.number,
-
-    //   // PLANNING
-    //   qty_planning: activePlan.qty_planning,
-    //   planning_date_time_in: activePlan.date_time_in,
-    //   planning_date_time_out: activePlanDateTimeOut,
-    //   planning_total: activePlan.total_time_planning,
-    // });
     // return 'All Plan In Queue Has Been Finished';
     return 'No Plan In Queue, No Active Plan';
   }
