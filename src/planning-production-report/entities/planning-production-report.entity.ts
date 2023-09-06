@@ -1,9 +1,11 @@
+import { ProductionReportLineStop } from 'src/production-report-line-stop/entities/production-report-line-stop.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 
 @Entity()
@@ -46,6 +48,13 @@ export class PlanningProductionReport {
 
   @Column({ nullable: true })
   planning_total: number;
+
+  @OneToMany(
+    () => ProductionReportLineStop,
+    (productionReportLineStop) =>
+      productionReportLineStop.planningProductionReport,
+  )
+  productionReportLineStop: ProductionReportLineStop[];
 
   @Column({ nullable: true })
   production_qty_actual: number;
