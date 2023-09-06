@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { CreatePlanningProductionReportDto } from './dto/create-planning-production-report.dto';
 import { UpdatePlanningProductionReportDto } from './dto/update-planning-production-report.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,12 +10,16 @@ import {
   PaginateQuery,
   paginate,
 } from 'nestjs-paginate';
+import axios from 'axios';
+import { ProductionReportLineStopService } from 'src/production-report-line-stop/production-report-line-stop.service';
 
 @Injectable()
 export class PlanningProductionReportService {
   constructor(
     @InjectRepository(PlanningProductionReport)
     private readonly planningProductionReportRepository: Repository<PlanningProductionReport>,
+    @Inject(forwardRef(() => ProductionReportLineStopService))
+    private readonly productionReportLineStopService: ProductionReportLineStopService,
   ) {}
 
   getReport(query: PaginateQuery) {
@@ -51,6 +55,7 @@ export class PlanningProductionReportService {
 
   async create(
     createPlanningProductionReportDto: CreatePlanningProductionReportDto,
+    token: string,
   ) {
     // client_id: activePlan.client_id,
     //   // SHIFT
@@ -70,5 +75,16 @@ export class PlanningProductionReportService {
     //   planning_date_time_out: activePlanDateTimeOut,
     //   planning_total: activePlan.total_time_planning,
     // if after save buat line stop report
+
+    const { data } = (
+      await axios.get(
+        `${process.env.SERVICE_LOSS_TIME}/loss-time/line-stops?dateIn=${createPlanningProductionReportDto.planning.date_time_in}&dateEnd=${createPlanningProductionReportDto.planning.date_time_out}`,
+        {
+          headers: {
+            Authorization: token,
+          },
+        },
+      )
+    ).data;
   }
 }
