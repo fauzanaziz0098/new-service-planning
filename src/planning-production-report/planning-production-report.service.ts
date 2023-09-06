@@ -12,6 +12,7 @@ import {
 } from 'nestjs-paginate';
 import axios from 'axios';
 import { ProductionReportLineStopService } from 'src/production-report-line-stop/production-report-line-stop.service';
+import { VariableResponLineStopReport } from 'src/interface/variable-respon-line-stop-reort.interface';
 
 @Injectable()
 export class PlanningProductionReportService {
@@ -76,7 +77,33 @@ export class PlanningProductionReportService {
     //   planning_total: activePlan.total_time_planning,
     // if after save buat line stop report
 
-    const { data } = (
+    const saveData = await this.planningProductionReportRepository.save({
+      client_id: createPlanningProductionReportDto.planning.client_id,
+      // SHIFT
+      shift: createPlanningProductionReportDto.planning.shift.name,
+      time_start: createPlanningProductionReportDto.planning.shift.time_start,
+      time_end: createPlanningProductionReportDto.planning.shift.time_end,
+      // product
+      product_part_name:
+        createPlanningProductionReportDto.planning.product.part_name,
+      product_part_number:
+        createPlanningProductionReportDto.planning.product.part_number,
+      product_cycle_time:
+        createPlanningProductionReportDto.planning.product.cycle_time,
+      // MCHINE
+      machine_name: createPlanningProductionReportDto.planning.machine.name,
+      machine_number: createPlanningProductionReportDto.planning.machine.number,
+      // PLANNING
+      qty_planning: createPlanningProductionReportDto.planning.qty_planning,
+      planning_date_time_in:
+        createPlanningProductionReportDto.planning.date_time_in,
+      planning_date_time_out:
+        createPlanningProductionReportDto.planning.date_time_out,
+      planning_total:
+        createPlanningProductionReportDto.planning.total_time_planning,
+    });
+
+    const respons = (
       await axios.get(
         `${process.env.SERVICE_LOSS_TIME}/loss-time/line-stops?dateIn=${createPlanningProductionReportDto.planning.date_time_in}&dateEnd=${createPlanningProductionReportDto.planning.date_time_out}`,
         {
@@ -86,5 +113,14 @@ export class PlanningProductionReportService {
         },
       )
     ).data;
+
+    const datas: VariableResponLineStopReport[] = respons;
+    datas.map((item) =>
+      this.productionReportLineStopService.create({
+        planningProductionReport: saveData,
+        timeTotal: item.sum,
+        lineStopName: item.lineStop_name,
+      }),
+    );
   }
 }
