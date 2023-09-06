@@ -69,5 +69,6 @@ export class PlanningProductionReportService {
     //   planning_date_time_in: activePlan.date_time_in,
     //   planning_date_time_out: activePlanDateTimeOut,
     //   planning_total: activePlan.total_time_planning,
+    // if after save buat line stop report
   }
 }

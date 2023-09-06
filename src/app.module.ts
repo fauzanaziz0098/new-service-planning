@@ -14,6 +14,7 @@ import { PlanningProductionModule } from './planning-production/planning-product
 import { PlanningProductionReportModule } from './planning-production-report/planning-production-report.module';
 import { NoPlanMachineAdditionalModule } from './no-plan-machine-additional/no-plan-machine-additional.module';
 import { PublicFunctionModule } from './public-function/public-function.module';
+import { ProductionReportLineStopModule } from './production-report-line-stop/production-report-line-stop.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { PublicFunctionModule } from './public-function/public-function.module';
     PlanningProductionReportModule,
     NoPlanMachineAdditionalModule,
     PublicFunctionModule,
+    ProductionReportLineStopModule,
   ],
   controllers: [AppController],
   providers: [AppService],
