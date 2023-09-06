@@ -54,4 +54,12 @@ export class PlanningProductionController {
       req.user['client'],
     );
   }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('last-planning')
+  getLastPlanning(@Req() request: Request) {
+    return this.planningProductionService.getLastPlanning(
+      request.user['client'],
+    );
+  }
 }

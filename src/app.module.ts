@@ -12,6 +12,7 @@ import { ShiftModule } from './shift/shift.module';
 import { NoPlanMachineModule } from './no-plan-machine/no-plan-machine.module';
 import { PlanningProductionModule } from './planning-production/planning-production.module';
 import { PlanningProductionReportModule } from './planning-production-report/planning-production-report.module';
+import { NoPlanMachineAdditionalModule } from './no-plan-machine-additional/no-plan-machine-additional.module';
 import { PublicFunctionModule } from './public-function/public-function.module';
 
 @Module({
@@ -51,6 +52,7 @@ import { PublicFunctionModule } from './public-function/public-function.module';
     NoPlanMachineModule,
     PlanningProductionModule,
     PlanningProductionReportModule,
+    NoPlanMachineAdditionalModule,
     PublicFunctionModule,
   ],
   controllers: [AppController],

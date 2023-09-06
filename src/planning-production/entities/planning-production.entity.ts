@@ -1,6 +1,7 @@
 import { Machine } from 'src/machine/entities/machine.entity';
 import { Product } from 'src/product/entities/product.entity';
 import { Shift } from 'src/shift/entities/shift.entity';
+import { NoPlanMachineAdditional } from 'src/no-plan-machine-additional/entities/no-plan-machine-additional.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,6 +10,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 
 @Entity()
@@ -66,6 +68,12 @@ export class PlanningProduction {
 
   @Column()
   user: string;
+
+  @OneToMany(
+    () => NoPlanMachineAdditional,
+    (noPlanMachineAdditional) => noPlanMachineAdditional.planning_production,
+  )
+  no_plan_machine_additional: NoPlanMachineAdditional;
 
   @CreateDateColumn()
   created_at: Date;

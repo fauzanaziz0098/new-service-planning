@@ -38,8 +38,8 @@ export class NoPlanMachineController {
   @UseGuards(PermissionsGuard)
   @SetMetadata('permissions', ['VIEW:NOPLAN'])
   @Get()
-  findAll() {
-    return this.noPlanMachineService.findAll();
+  findAll(@Req() request: Request) {
+    return this.noPlanMachineService.findAll(request.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -57,7 +57,9 @@ export class NoPlanMachineController {
   update(
     @Param('id') id: string,
     @Body(new ValidationPipe()) updateNoPlanMachineDto: UpdateNoPlanMachineDto,
+    @Req() request: Request,
   ) {
+    updateNoPlanMachineDto.client_id = request.user['client'];
     return this.noPlanMachineService.update(+id, updateNoPlanMachineDto);
   }
 
