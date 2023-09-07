@@ -244,7 +244,7 @@ export class PlanningProductionService {
     }
   }
 
-  async stopPlanningProduction(client_id: string) {
+  async stopPlanningProduction(client_id: string, token: string) {
     // cek aktif plan
     const activePlan = await this.planningProductionRepository.findOne({
       where: { active_plan: true, client_id: client_id },
@@ -363,7 +363,10 @@ export class PlanningProductionService {
     // activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
     // activePlan.qty_per_hour = Math.round(qty * 60);
     // activePlan.total_time_actual: differenceTime;
-    // await this.planningProductionReportService.create({ planning: activePlan });
+    // await this.planningProductionReportService.create(
+    //   { planning: activePlan },
+    //   token,
+    // );
 
     // return 'All Plan In Queue Has Been Finished';
     return 'No Plan In Queue, No Active Plan';

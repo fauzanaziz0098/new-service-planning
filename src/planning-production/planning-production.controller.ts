@@ -53,6 +53,7 @@ export class PlanningProductionController {
   stopPlanning(@Req() req: Request) {
     return this.planningProductionService.stopPlanningProduction(
       req.user['client'],
+      req.headers.authorization,
     );
   }
 
