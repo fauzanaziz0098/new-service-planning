@@ -129,4 +129,6 @@ export class ReportShiftService {
       : message['qty_actual'][0];
     reportShift.planning_id = planning.id;
   }
+
+  async saveReportIfStop(planning: PlanningProduction) {}
 }
