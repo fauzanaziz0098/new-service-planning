@@ -93,8 +93,8 @@ export class PlanningProductionService {
         relations: ['shift'],
       });
     const topicSplit = topic.split(':')[0];
-    delete message.qty_actual;
-    delete message.qty_hour;
+    // delete message.qty_actual;
+    // delete message.qty_hour;
     console.log(message);
 
     message.OperatorId = [activePlanProduction?.user];
