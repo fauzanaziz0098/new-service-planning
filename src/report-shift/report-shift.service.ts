@@ -8,6 +8,7 @@ import * as moment from 'moment';
 import * as mqtt from 'mqtt';
 import { PlanningProductionService } from 'src/planning-production/planning-production.service';
 import { PlanningProduction } from 'src/planning-production/entities/planning-production.entity';
+import { NoPlanMachine } from 'src/no-plan-machine/entities/no-plan-machine.entity';
 
 @Injectable()
 export class ReportShiftService {
@@ -130,5 +131,71 @@ export class ReportShiftService {
     reportShift.planning_id = planning.id;
   }
 
-  async saveReportIfStop(planning: PlanningProduction) {}
+  async saveReportIfStop(planning: PlanningProduction) {
+    const reportShiftSebelumya = await this.reportShiftRepository.findOne({
+      where: {
+        planning_id: planning.id,
+      },
+    });
+    const getShift = await this.shiftService.getShiftBatewinByTimeEnd(
+      planning.client_id,
+      moment(planning.date_time_out).format('HH:mm:ss'),
+    );
+
+    const noPlan = await this.noPlanCount(
+      getShift.no_plan_machine_id,
+      planning.date_time_out,
+    );
+
+    const startTime = moment(getShift.time_start, 'HH:mm:ss');
+    const endTime = moment(planning.date_time_out, 'HH:mm:ss');
+
+    const durationInSeconds = endTime.diff(startTime, 'seconds');
+
+    const message = await this.initializeMqttClientSpesifikMachine(
+      planning.machine.id,
+    );
+
+    const reportShift = new ReportShift();
+    reportShift.client_id = planning.client_id;
+    reportShift.machine_name = planning.machine.name;
+    reportShift.product_part_name = planning.product.part_name;
+    reportShift.product_part_number = planning.product.part_number;
+    reportShift.product_cycle_time = planning.product.cycle_time;
+    reportShift.shift = getShift.name;
+    reportShift.qty_plan =
+      (durationInSeconds - noPlan) / planning.product.cycle_time;
+    reportShift.total_planning = planning.total_time_planning;
+    reportShift.no_plan = noPlan;
+    reportShift.oprator_name = planning.user;
+    reportShift.qty_actual = reportShiftSebelumya
+      ? message['qty_actual'][0] - reportShift.qty_actual
+      : message['qty_actual'][0];
+    reportShift.planning_id = planning.id;
+  }
+
+  async noPlanCount(noPlanning: NoPlanMachine[], jamStop: Date) {
+    const jamPulang = moment(jamStop, 'HH:mm:ss');
+
+    let totalDurasiDetik = 0;
+    let isJamPulangFound = false;
+
+    for (const istirahat of noPlanning) {
+      const waktuMulai = moment(istirahat.time_in, 'HH:mm:ss');
+      const waktuSelesai = moment(istirahat.time_out, 'HH:mm:ss');
+
+      if (isJamPulangFound) {
+        break; // Keluar dari loop jika jam pulang sudah ditemukan
+      }
+
+      if (jamPulang.isBetween(waktuMulai, waktuSelesai)) {
+        totalDurasiDetik += jamPulang.diff(waktuMulai, 'seconds');
+        isJamPulangFound = true; // Menandai bahwa jam pulang sudah ditemukan
+      } else {
+        totalDurasiDetik += waktuSelesai.diff(waktuMulai, 'seconds');
+      }
+    }
+
+    return totalDurasiDetik;
+  }
 }
