@@ -13,6 +13,7 @@ import {
 import axios from 'axios';
 import { ProductionReportLineStopService } from 'src/production-report-line-stop/production-report-line-stop.service';
 import { VariableResponLineStopReport } from 'src/interface/variable-respon-line-stop-reort.interface';
+import * as moment from 'moment';
 
 @Injectable()
 export class PlanningProductionReportService {
@@ -118,7 +119,7 @@ export class PlanningProductionReportService {
     datas.map((item) =>
       this.productionReportLineStopService.create({
         planningProductionReport: saveData,
-        timeTotal: item.sum,
+        timeTotal: moment.duration(item.sum, 'seconds').minutes(),
         lineStopName: item.lineStop_name,
       }),
     );
