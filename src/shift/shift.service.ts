@@ -31,7 +31,9 @@ export class ShiftService {
   }
 
   async findAllWithoutFilterClient() {
-    return await this.shiftRepository.find();
+    return await this.shiftRepository.find({
+      relations: ['no_plan_machine_id'],
+    });
   }
 
   async findOne(id: number) {
