@@ -442,4 +442,14 @@ export class PlanningProductionService {
     });
     this.client.end();
   }
+
+  async getPlanningActive(cleintId: string) {
+    return await this.planningProductionRepository.find({
+      where: {
+        client_id: cleintId,
+        active_plan: true,
+      },
+      relations: ['machine', 'product', 'shift'],
+    });
+  }
 }

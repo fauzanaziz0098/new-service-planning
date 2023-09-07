@@ -30,6 +30,10 @@ export class ShiftService {
     return this.shiftRepository.find({ where: { client_id: client_id } });
   }
 
+  async findAllWithoutFilterClient() {
+    return await this.shiftRepository.find();
+  }
+
   async findOne(id: number) {
     const shift = await this.shiftRepository.findOne({ where: { id: id } });
     if (shift) {
