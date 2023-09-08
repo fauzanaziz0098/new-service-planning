@@ -14,6 +14,7 @@ import axios from 'axios';
 import { ProductionReportLineStopService } from 'src/production-report-line-stop/production-report-line-stop.service';
 import { VariableResponLineStopReport } from 'src/interface/variable-respon-line-stop-reort.interface';
 import * as moment from 'moment';
+import { ShiftService } from 'src/shift/shift.service';
 
 @Injectable()
 export class PlanningProductionReportService {
@@ -22,6 +23,8 @@ export class PlanningProductionReportService {
     private readonly planningProductionReportRepository: Repository<PlanningProductionReport>,
     @Inject(forwardRef(() => ProductionReportLineStopService))
     private readonly productionReportLineStopService: ProductionReportLineStopService,
+    @Inject(forwardRef(() => ShiftService))
+    private readonly shiftService: ShiftService,
   ) {}
 
   getReport(query: PaginateQuery) {
@@ -81,9 +84,22 @@ export class PlanningProductionReportService {
     const saveData = await this.planningProductionReportRepository.save({
       client_id: createPlanningProductionReportDto.planning.client_id,
       // SHIFT
-      shift: createPlanningProductionReportDto.planning.shift.name,
-      time_start: createPlanningProductionReportDto.planning.shift.time_start,
-      time_end: createPlanningProductionReportDto.planning.shift.time_end,
+      shift_start: (
+        await this.shiftService.getShiftBatewinByTimeStart(
+          createPlanningProductionReportDto.planning.client_id,
+          moment(
+            createPlanningProductionReportDto.planning.date_time_in,
+          ).format('HH:mm:ss'),
+        )
+      ).name,
+      shift_end: (
+        await this.shiftService.getShiftBatewinByTimeEnd(
+          createPlanningProductionReportDto.planning.client_id,
+          moment(
+            createPlanningProductionReportDto.planning.date_time_out,
+          ).format('HH:mm:ss'),
+        )
+      ).name,
       // product
       product_part_name:
         createPlanningProductionReportDto.planning.product.part_name,
