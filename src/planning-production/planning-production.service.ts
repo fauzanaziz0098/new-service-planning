@@ -19,6 +19,7 @@ import { ProductService } from 'src/product/product.service';
 import * as moment from 'moment';
 import { PlanningProductionReportService } from 'src/planning-production-report/planning-production-report.service';
 import { NoPlanMachineAdditionalService } from 'src/no-plan-machine-additional/no-plan-machine-additional.service';
+import { ReportShiftService } from 'src/report-shift/report-shift.service';
 
 @Injectable()
 export class PlanningProductionService {
@@ -38,6 +39,8 @@ export class PlanningProductionService {
     private planningProductionReportService: PlanningProductionReportService,
     @Inject(forwardRef(() => NoPlanMachineAdditionalService))
     private noPlanMachineAdditionalService: NoPlanMachineAdditionalService,
+    @Inject(forwardRef(() => ReportShiftService))
+    private reportShiftService: ReportShiftService,
   ) {
     this.initializeMqttClient();
   }
@@ -359,14 +362,17 @@ export class PlanningProductionService {
     });
 
     // for create report
-    // activePlan.date_time_out = activePlanDateTimeOut;
-    // activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
-    // activePlan.qty_per_hour = Math.round(qty * 60);
-    // activePlan.total_time_actual: differenceTime;
-    // await this.planningProductionReportService.create(
-    //   { planning: activePlan },
-    //   token,
-    // );
+    activePlan.date_time_out = activePlanDateTimeOut;
+    activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
+    activePlan.qty_per_hour = Math.round(qty * 60);
+    activePlan.total_time_actual = differenceTime;
+    await this.planningProductionReportService.create(
+      { planning: activePlan },
+      token,
+    );
+
+    // for Create report shift
+    await this.reportShiftService.saveReportIfStop(activePlan);
 
     // return 'All Plan In Queue Has Been Finished';
     return 'No Plan In Queue, No Active Plan';

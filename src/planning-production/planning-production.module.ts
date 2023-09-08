@@ -10,6 +10,7 @@ import { ProductModule } from 'src/product/product.module';
 import { PlanningProductionReport } from '../planning-production-report/entities/planning-production-report.entity';
 import { PlanningProductionReportModule } from 'src/planning-production-report/planning-production-report.module';
 import { NoPlanMachineAdditionalModule } from 'src/no-plan-machine-additional/no-plan-machine-additional.module';
+import { ReportShiftModule } from 'src/report-shift/report-shift.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { NoPlanMachineAdditionalModule } from 'src/no-plan-machine-additional/no
     forwardRef(() => ProductModule),
     forwardRef(() => PlanningProductionReportModule),
     forwardRef(() => NoPlanMachineAdditionalModule),
+    forwardRef(() => ReportShiftModule),
   ],
   controllers: [PlanningProductionController],
   providers: [PlanningProductionService],
