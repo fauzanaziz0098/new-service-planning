@@ -251,7 +251,7 @@ export class PlanningProductionService {
     // cek aktif plan
     const activePlan = await this.planningProductionRepository.findOne({
       where: { active_plan: true, client_id: client_id },
-      relations: ['shift'],
+      relations: ['product', 'machine', 'shift'],
     });
 
     if (!activePlan) {
