@@ -118,6 +118,8 @@ export class PlanningProductionReportService {
         createPlanningProductionReportDto.planning.date_time_out,
       planning_total:
         createPlanningProductionReportDto.planning.total_time_planning,
+
+      oprator: createPlanningProductionReportDto.planning.user,
     });
 
     const respons = (
