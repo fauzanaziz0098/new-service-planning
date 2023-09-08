@@ -258,9 +258,9 @@ export class PlanningProductionService {
       return 'No Active Plan';
     }
 
-    const lineStopBeforeStop = await this.initializeMqttClientSpesifikMachine(
-      activePlan.id,
-    );
+    // const lineStopBeforeStop = await this.initializeMqttClientSpesifikMachine(
+    //   activePlan.id,
+    // );
 
     // cek plan berikutnya yang akan aktif
     const nextPlan = await this.planningProductionRepository.findOne({

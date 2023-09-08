@@ -132,12 +132,14 @@ export class PlanningProductionReportService {
     ).data;
 
     const datas: VariableResponLineStopReport[] = respons;
-    datas.map((item) =>
-      this.productionReportLineStopService.create({
-        planningProductionReport: saveData,
-        timeTotal: moment.duration(item.sum, 'seconds').minutes(),
-        lineStopName: item.lineStop_name,
-      }),
-    );
+    if (datas && datas.length > 0) {
+      datas.map((item) =>
+        this.productionReportLineStopService.create({
+          planningProductionReport: saveData,
+          timeTotal: moment.duration(item.sum, 'seconds').minutes(),
+          lineStopName: item.lineStop_name,
+        }),
+      );
+    }
   }
 }
