@@ -143,7 +143,9 @@ export class ReportShiftService {
     );
 
     const noPlan = await this.noPlanCount(
-      getShift.no_plan_machine_id,
+      getShift.no_plan_machine_id.filter(
+        (item) => item.day == moment().format('dddd').toLocaleLowerCase(),
+      ),
       planning.date_time_out,
     );
 
