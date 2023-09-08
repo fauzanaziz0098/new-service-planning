@@ -123,8 +123,12 @@ export class PlanningProductionReportService {
     });
 
     const respons = (
-      await axios.get(
-        `${process.env.SERVICE_LOSS_TIME}/loss-time/line-stops?dateIn=${createPlanningProductionReportDto.planning.date_time_in}&dateEnd=${createPlanningProductionReportDto.planning.date_time_out}`,
+      await axios.post(
+        `${process.env.SERVICE_LOSS_TIME}/loss-time/line-stops`,
+        {
+          dateIn: createPlanningProductionReportDto.planning.date_time_in,
+          dateEnd: createPlanningProductionReportDto.planning.date_time_out,
+        },
         {
           headers: {
             Authorization: token,
@@ -133,7 +137,7 @@ export class PlanningProductionReportService {
       )
     ).data;
 
-    const datas: VariableResponLineStopReport[] = respons;
+    const datas: VariableResponLineStopReport[] = respons.data;
     if (datas && datas.length > 0) {
       datas.map((item) =>
         this.productionReportLineStopService.create({
