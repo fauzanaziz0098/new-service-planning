@@ -67,7 +67,7 @@ export class ShiftService {
     return await this.shiftRepository
       .createQueryBuilder('shift')
       .leftJoinAndSelect('shift.no_plan_machine_id', 'no_plan_machine_id')
-      .where('TIME(:startTime) BETWEEN shift.time_start AND shift.time_end', {
+      .where(':startTime BETWEEN shift.time_start AND shift.time_end', {
         startTime,
       })
       .andWhere('shift.client_id = :clientId', { clientId })
@@ -77,7 +77,7 @@ export class ShiftService {
     return await this.shiftRepository
       .createQueryBuilder('shift')
       .leftJoinAndSelect('shift.no_plan_machine_id', 'no_plan_machine_id')
-      .where('TIME(:endTime) BETWEEN shift.time_start AND shift.time_end', {
+      .where(':endTime BETWEEN shift.time_start AND shift.time_end', {
         endTime,
       })
       .andWhere('shift.client_id = :clientId', { clientId })
