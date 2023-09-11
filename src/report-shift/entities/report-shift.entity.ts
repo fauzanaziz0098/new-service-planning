@@ -29,10 +29,10 @@ export class ReportShift {
   @Column()
   shift: string;
 
-  @Column()
+  @Column({ nullable: true })
   no_plan: number;
 
-  @Column()
+  @Column({ type: 'float', nullable: true })
   qty_plan: number;
 
   @Column()

@@ -144,8 +144,10 @@ export class NoPlanMachineAdditionalService {
     });
   }
 
-  findAll(client_id: string) {
-    return `This action returns all noPlanMachineAdditional`;
+  async findAll(client_id: string) {
+    return this.noPlanMachineRepository.find({
+      where: { client_id: client_id },
+    });
   }
 
   async findOne(planning_production_id: any) {

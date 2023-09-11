@@ -129,9 +129,13 @@ export class ReportShiftService {
       ? message['qty_actual'][0] - reportShift.qty_actual
       : message['qty_actual'][0];
     reportShift.planning_id = planning.id;
+
+    return await this.reportShiftRepository.save(reportShift);
   }
 
   async saveReportIfStop(planning: PlanningProduction) {
+    console.log('run', planning);
+
     const reportShiftSebelumya = await this.reportShiftRepository.findOne({
       where: {
         planning_id: planning.id,
@@ -165,15 +169,18 @@ export class ReportShiftService {
     reportShift.product_part_number = planning.product.part_number;
     reportShift.product_cycle_time = planning.product.cycle_time;
     reportShift.shift = getShift.name;
-    reportShift.qty_plan =
-      (durationInSeconds - noPlan) / planning.product.cycle_time;
+    reportShift.qty_plan = Number(
+      ((durationInSeconds - noPlan) / planning.product.cycle_time).toFixed(2),
+    );
     reportShift.total_planning = planning.total_time_planning;
     reportShift.no_plan = noPlan;
     reportShift.oprator_name = planning.user;
     reportShift.qty_actual = reportShiftSebelumya
-      ? message['qty_actual'][0] - reportShift.qty_actual
+      ? message['qty_actual'][0] - reportShiftSebelumya.qty_actual
       : message['qty_actual'][0];
     reportShift.planning_id = planning.id;
+
+    return this.reportShiftRepository.save(reportShift);
   }
 
   async noPlanCount(noPlanning: NoPlanMachine[], jamStop: Date) {

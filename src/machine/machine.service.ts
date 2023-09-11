@@ -29,7 +29,10 @@ export class MachineService {
   ) {}
   async create(createMachineDto: CreateMachineDto, user: any) {
     const existMachine = await this.machineRepository.findOne({
-      where: { name: createMachineDto.name },
+      where: {
+        name: createMachineDto.name,
+        client_id: createMachineDto.client_id,
+      },
     });
     if (!existMachine) {
       const machine = this.machineRepository.save(createMachineDto);
