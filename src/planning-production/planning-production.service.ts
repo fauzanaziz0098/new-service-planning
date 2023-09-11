@@ -20,6 +20,7 @@ import * as moment from 'moment';
 import { PlanningProductionReportService } from 'src/planning-production-report/planning-production-report.service';
 import { NoPlanMachineAdditionalService } from 'src/no-plan-machine-additional/no-plan-machine-additional.service';
 import { ReportShiftService } from 'src/report-shift/report-shift.service';
+import axios from 'axios';
 
 @Injectable()
 export class PlanningProductionService {
@@ -307,6 +308,15 @@ export class PlanningProductionService {
         nextPlan.client_id,
       );
       if (nextPlan.dandory_time != 0) {
+        // for save last production
+        await axios.post(
+          `${process.env.SERVICE_PRODUCTION}/production/stopped`,
+          {
+            clientId: activePlan.client_id,
+            planning_production_id: activePlan.id,
+          },
+        );
+
         await this.planningProductionRepository.update(activePlan.id, {
           // active_plan: false,
           dandory_time: -1,
@@ -316,6 +326,15 @@ export class PlanningProductionService {
           qty_per_hour: Math.round(qty * 60),
         });
         setTimeout(async () => {
+          // for save last production
+          await axios.post(
+            `${process.env.SERVICE_PRODUCTION}/production/stopped`,
+            {
+              clientId: activePlan.client_id,
+              planning_production_id: activePlan.id,
+            },
+          );
+
           await this.planningProductionRepository.update(nextPlan.id, {
             active_plan: true,
             dandory_time: null,
@@ -336,6 +355,14 @@ export class PlanningProductionService {
         }
         return `Plan has been Stopped, Activate Next Plan`;
       } else {
+        // for save last production
+        await axios.post(
+          `${process.env.SERVICE_PRODUCTION}/production/stopped`,
+          {
+            clientId: activePlan.client_id,
+            planning_production_id: activePlan.id,
+          },
+        );
         await this.planningProductionRepository.update(activePlan.id, {
           active_plan: false,
           date_time_out: activePlanDateTimeOut,
@@ -353,6 +380,12 @@ export class PlanningProductionService {
         return `Plan has been Stopped, Activate Next Plan`;
       }
     }
+    // for save last production
+    await axios.post(`${process.env.SERVICE_PRODUCTION}/production/stopped`, {
+      clientId: activePlan.client_id,
+      planning_production_id: activePlan.id,
+    });
+
     await this.planningProductionRepository.update(activePlan.id, {
       active_plan: false,
       date_time_out: activePlanDateTimeOut,
