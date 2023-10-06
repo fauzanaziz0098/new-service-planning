@@ -16,6 +16,7 @@ import { NoPlanMachineAdditionalModule } from './no-plan-machine-additional/no-p
 import { PublicFunctionModule } from './public-function/public-function.module';
 import { ProductionReportLineStopModule } from './production-report-line-stop/production-report-line-stop.module';
 import { ReportShiftModule } from './report-shift/report-shift.module';
+import { ConditionMachineModule } from './condition-machine/condition-machine.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { ReportShiftModule } from './report-shift/report-shift.module';
     PublicFunctionModule,
     ProductionReportLineStopModule,
     ReportShiftModule,
+    ConditionMachineModule,
   ],
   controllers: [AppController],
   providers: [AppService],
