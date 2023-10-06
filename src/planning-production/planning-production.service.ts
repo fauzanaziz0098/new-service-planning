@@ -21,6 +21,7 @@ import { PlanningProductionReportService } from 'src/planning-production-report/
 import { NoPlanMachineAdditionalService } from 'src/no-plan-machine-additional/no-plan-machine-additional.service';
 import { ReportShiftService } from 'src/report-shift/report-shift.service';
 import axios from 'axios';
+import { ConditionMachineProductionService } from 'src/condition-machine-production/condition-machine-production.service';
 
 @Injectable()
 export class PlanningProductionService {
@@ -42,6 +43,8 @@ export class PlanningProductionService {
     private noPlanMachineAdditionalService: NoPlanMachineAdditionalService,
     @Inject(forwardRef(() => ReportShiftService))
     private reportShiftService: ReportShiftService,
+    @Inject(forwardRef(() => ConditionMachineProductionService))
+    private conditionMachineProductionService: ConditionMachineProductionService,
   ) {
     this.initializeMqttClient();
   }
@@ -216,6 +219,10 @@ export class PlanningProductionService {
           return error;
         }
       }
+      await this.conditionMachineProductionService.create(
+        planningProduction.id,
+        createPlanningProductionDto.client_id,
+      );
       return planningProduction;
 
       // Jika ada dandory time dan plan aktif,MASUK ANTRIAN
@@ -347,6 +354,10 @@ export class PlanningProductionService {
           const newNextPlan = this.planningProductionRepository.findOne({
             where: { id: nextPlan.id, client_id: client_id },
           });
+          await this.conditionMachineProductionService.create(
+            nextPlan.id,
+            client_id,
+          );
 
           return newNextPlan;
         }, 60000 * nextPlan.dandory_time);

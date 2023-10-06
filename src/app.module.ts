@@ -17,6 +17,7 @@ import { PublicFunctionModule } from './public-function/public-function.module';
 import { ProductionReportLineStopModule } from './production-report-line-stop/production-report-line-stop.module';
 import { ReportShiftModule } from './report-shift/report-shift.module';
 import { ConditionMachineModule } from './condition-machine/condition-machine.module';
+import { ConditionMachineProductionModule } from './condition-machine-production/condition-machine-production.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { ConditionMachineModule } from './condition-machine/condition-machine.mo
     ProductionReportLineStopModule,
     ReportShiftModule,
     ConditionMachineModule,
+    ConditionMachineProductionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { ConditionMachineProduction } from 'src/condition-machine-production/entities/condition-machine-production.entity';
 
 @Entity('condition_machine')
 export class ConditionMachine {
@@ -29,4 +30,10 @@ export class ConditionMachine {
 
   @UpdateDateColumn()
   updated: Date;
+
+  @OneToMany(
+    () => ConditionMachineProduction,
+    (conditionMachineProduction) => conditionMachineProduction.conditionMachine,
+  )
+  conditionMachineProduction: ConditionMachineProduction[];
 }
