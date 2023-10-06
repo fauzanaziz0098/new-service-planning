@@ -11,6 +11,12 @@ import {
 import { Exclude } from 'class-transformer';
 import { ConditionMachine } from 'src/condition-machine/entities/condition-machine.entity';
 
+export enum StatusType {
+  NORMAL = 0,
+  KRITIS = 1,
+  TROUBLE = 2,
+}
+
 @Entity('condition_machine_production')
 export class ConditionMachineProduction {
   @PrimaryGeneratedColumn('increment')
@@ -28,6 +34,17 @@ export class ConditionMachineProduction {
 
   @Column({ name: 'client', nullable: true })
   clientId: string;
+
+  @Column({ name: 'planningId', nullable: true })
+  planningId: number;
+
+  @Column({
+    name: 'status',
+    type: 'enum',
+    enum: StatusType,
+    default: StatusType.NORMAL,
+  })
+  status: StatusType;
 
   @CreateDateColumn()
   created: Date;

@@ -3,6 +3,8 @@ import { ConditionMachineProduction } from './entities/condition-machine-product
 import { Repository } from 'typeorm';
 import { Inject, forwardRef } from '@nestjs/common';
 import { ConditionMachineService } from 'src/condition-machine/condition-machine.service';
+import { CreateConditionMachineProductionDto } from './dto/create-condition-machine-production.dto';
+import { ConditionMachine } from 'src/condition-machine/entities/condition-machine.entity';
 
 export class ConditionMachineProductionService {
   constructor(
@@ -13,6 +15,20 @@ export class ConditionMachineProductionService {
   ) {}
 
   async create(planningId: number, clientId: string) {
-    return true;
+    const conditionMachine = await this.conditionMachineService.getDataByClient(
+      clientId,
+    );
+
+    const datas: CreateConditionMachineProductionDto[] = conditionMachine.map(
+      (item: ConditionMachine) => {
+        return {
+          conditionMachine: item,
+          clientId,
+          planningId,
+        };
+      },
+    );
+
+    return await this.conditionMachineProductionRepository.save(datas);
   }
 }

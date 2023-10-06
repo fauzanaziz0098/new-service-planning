@@ -70,4 +70,11 @@ export class ConditionMachineService {
 
     return 'Condition Machine updated successfully';
   }
+
+  async getDataByClient(clientId: string) {
+    return await this.conditionMachineRepository
+      .createQueryBuilder('conditionMachine')
+      .where('conditionMachine.clientId = :clientId', { clientId })
+      .getMany();
+  }
 }
