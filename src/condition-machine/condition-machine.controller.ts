@@ -54,4 +54,11 @@ export class ConditionMachineController {
       req.user,
     );
   }
+
+  @Delete(':id')
+  async delete(
+    @Param('id') id: number
+  ) {
+    return this.conditionMachineService.remove(id)    
+  }
 }

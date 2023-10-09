@@ -244,6 +244,7 @@ export class PlanningProductionService {
           return error;
         }
       }
+      await this.conditionMachineProductionService.create(planningProduction.id, planningProduction.client_id)
       return planningProduction;
 
       // Jika ada dandory time dan plan aktif,MASUK ANTRIAN
@@ -270,6 +271,7 @@ export class PlanningProductionService {
           return error;
         }
       }
+      await this.conditionMachineProductionService.create(planningProduction.id, planningProduction.client_id)
       return planningProduction;
     }
   }

@@ -5,6 +5,7 @@ import { CreateConditionMachineDto } from './dto/create-condition-machine.dto';
 import { VariableUserLogin } from 'src/interface/variable-user-login.interface';
 import { PaginateConfig, PaginateQuery, paginate } from 'nestjs-paginate';
 import { UpdateConditionMachineDto } from './dto/update-condition-machine.dto';
+import { HttpException, HttpStatus } from '@nestjs/common';
 
 export class ConditionMachineService {
   constructor(
@@ -76,5 +77,15 @@ export class ConditionMachineService {
       .createQueryBuilder('conditionMachine')
       .where('conditionMachine.clientId = :clientId', { clientId })
       .getMany();
+  }
+
+  async remove(id: number) {
+    const data = await this.findOne(id)
+
+    if (data) {
+      return this.conditionMachineRepository.remove(data)
+    }
+    throw new HttpException("Machine Condition Not Found", HttpStatus.NOT_FOUND);
+    
   }
 }

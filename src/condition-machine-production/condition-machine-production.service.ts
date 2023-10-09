@@ -11,6 +11,7 @@ import { ConditionMachine } from 'src/condition-machine/entities/condition-machi
 import { PlanningProductionService } from 'src/planning-production/planning-production.service';
 import { VariableUserLogin } from 'src/interface/variable-user-login.interface';
 import * as moment from 'moment';
+import { PaginateQuery, PaginateConfig, paginate } from 'nestjs-paginate';
 
 export class ConditionMachineProductionService {
   constructor(
@@ -59,5 +60,19 @@ export class ConditionMachineProductionService {
       );
     }
     return await this.conditionMachineProductionRepository.update(id, body);
+  }
+
+  async findAll(query: PaginateQuery, user: VariableUserLogin) {
+    const queryBuilder = this.conditionMachineProductionRepository
+      .createQueryBuilder('conditionMachineProduction')
+      .leftJoinAndSelect('conditionMachineProduction.conditionMachine', 'conditionMachine')
+      .where('conditionMachineProduction.clientId = :client', { client: user.client });
+
+    const config: PaginateConfig<ConditionMachineProduction> = {
+      sortableColumns: ['id'],
+      searchableColumns: ['clientId'],
+    };
+
+    return paginate<ConditionMachineProduction>(query, queryBuilder, config);
   }
 }

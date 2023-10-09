@@ -23,6 +23,11 @@ export class ConditionMachineProductionController {
   constructor(
     private readonly conditionMachineProductionService: ConditionMachineProductionService,
   ) {}
+  
+  @Get()
+  async findAll(@Paginate() query: PaginateQuery, @Request() req) {
+    return await this.conditionMachineProductionService.findAll(query, req.user);
+  }
 
   @Patch(':id')
   async update(
@@ -30,7 +35,7 @@ export class ConditionMachineProductionController {
     @Body('status') status: StatusType,
     @Request() req,
   ) {
-    return await this.conditionMachineProductionService.updateByApi(id, req, {
+    return await this.conditionMachineProductionService.updateByApi(id, req.user, {
       status,
     });
   }
