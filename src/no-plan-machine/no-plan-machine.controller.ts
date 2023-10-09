@@ -17,6 +17,7 @@ import { UpdateNoPlanMachineDto } from './dto/update-no-plan-machine.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { PermissionsGuard } from 'src/auth/guards/permission.guard';
+import * as moment from 'moment';
 
 @Controller('no-plan-machine')
 export class NoPlanMachineController {
@@ -31,6 +32,13 @@ export class NoPlanMachineController {
     @Req() request: Request,
   ) {
     createNoPlanMachineDto.client_id = request.user['client'];
+    const time_in = moment(createNoPlanMachineDto.time_in).format('HH:mm');
+    const timein = moment(time_in, 'HH:mm');
+    const time_out = moment(createNoPlanMachineDto.time_out).format('HH:mm');
+    const timeout = moment(time_out, 'HH:mm');
+    createNoPlanMachineDto.time_in = timein.toDate();
+    createNoPlanMachineDto.time_out = timeout.toDate();
+
     return this.noPlanMachineService.create(createNoPlanMachineDto);
   }
 
@@ -51,6 +59,12 @@ export class NoPlanMachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Get('shift/:shiftId')
+  async findAllByShift(@Param("shiftId") shiftId: string) {
+    return this.noPlanMachineService.findAllByShift(shiftId)
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @UseGuards(PermissionsGuard)
   @SetMetadata('permissions', ['UPDATE:NOPLAN'])
   @Patch(':id')
@@ -60,6 +74,12 @@ export class NoPlanMachineController {
     @Req() request: Request,
   ) {
     updateNoPlanMachineDto.client_id = request.user['client'];
+    const time_in = moment(updateNoPlanMachineDto.time_in).format('HH:mm');
+    const timein = moment(time_in, 'HH:mm');
+    const time_out = moment(updateNoPlanMachineDto.time_out).format('HH:mm');
+    const timeout = moment(time_out, 'HH:mm');
+    updateNoPlanMachineDto.time_in = timein.toDate();
+    updateNoPlanMachineDto.time_out = timeout.toDate();
     return this.noPlanMachineService.update(+id, updateNoPlanMachineDto);
   }
 

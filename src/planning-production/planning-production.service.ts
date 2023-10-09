@@ -189,13 +189,38 @@ export class PlanningProductionService {
       return 'Time Out Already Used By Other Plan';
     }
 
+    const totalTimePlanning = Math.round(
+      (product.cycle_time * createPlanningProductionDto.qty_planning) / 60
+    );
     // jika tidak ada plan yang aktif dan tidak ada dandory time, AKTIF
     if (!isActivePlan) {
+      const planStart = moment().format("HH:mm")
+      const planEnd = moment(planStart, 'HH:mm').add(totalTimePlanning, 'minutes').format("HH:mm")
+      console.log(planStart, 'start', planEnd, 'end');
+      
+
+      const today = moment().format('dddd').toLocaleLowerCase();
+      const noPlanMachine = await this.noPlanMachineService.findOneByShift(
+        createPlanningProductionDto.shift,
+        today,
+      );
+  
+      // cek no plan additional
+      let totalNoPlanMachine = 0;
+      noPlanMachine.map((res) => {
+        const isWithinTimeRange =
+        moment(res.time_in, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) &&
+        moment(res.time_out, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm'));
+      if (isWithinTimeRange) {
+        totalNoPlanMachine += res.total;
+      }
+      });
+  
       createPlanningProductionDto.active_plan = true;
       createPlanningProductionDto.date_time_in = moment().toDate();
-      createPlanningProductionDto.total_time_planning = Math.round(
-        (product.cycle_time * createPlanningProductionDto.qty_planning) / 60,
-      );
+      createPlanningProductionDto.total_time_planning = totalTimePlanning
+      createPlanningProductionDto.qty_per_minute = Number((createPlanningProductionDto.qty_planning / (totalTimePlanning - totalNoPlanMachine)).toFixed(2))
+
 
       createPlanningProductionDto.dandory_time = null;
       const planningProduction = await this.planningProductionRepository.save(
@@ -224,9 +249,7 @@ export class PlanningProductionService {
       // Jika ada dandory time dan plan aktif,MASUK ANTRIAN
     } else {
       createPlanningProductionDto.active_plan = false;
-      createPlanningProductionDto.total_time_planning = Math.round(
-        (product.cycle_time * createPlanningProductionDto.qty_planning) / 60,
-      );
+      createPlanningProductionDto.total_time_planning = totalTimePlanning
       const planningProduction = await this.planningProductionRepository.save(
         createPlanningProductionDto,
       );
@@ -312,36 +335,55 @@ export class PlanningProductionService {
       );
       if (nextPlan.dandory_time != 0) {
         // for save last production
-        await axios.post(
-          `${process.env.SERVICE_PRODUCTION}/production/stopped`,
-          {
-            clientId: activePlan.client_id,
-            planning_production_id: activePlan.id,
-          },
-        );
+        // await axios.post(
+        //   `${process.env.SERVICE_PRODUCTION}/production/stopped`,
+        //   {
+        //     clientId: activePlan.client_id,
+        //     planning_production_id: activePlan.id,
+        //   },
+        // );
 
         await this.planningProductionRepository.update(activePlan.id, {
           // active_plan: false,
           dandory_time: -1,
           date_time_out: activePlanDateTimeOut,
           total_time_actual: differenceTime,
-          qty_per_minute: parseFloat(qty.toFixed(2)),
+          // qty_per_minute: parseFloat(qty.toFixed(2)),
           qty_per_hour: Math.round(qty * 60),
         });
         setTimeout(async () => {
           // for save last production
-          await axios.post(
-            `${process.env.SERVICE_PRODUCTION}/production/stopped`,
-            {
-              clientId: activePlan.client_id,
-              planning_production_id: activePlan.id,
-            },
+          const planStart = moment().format("HH:mm")
+          const planEnd = moment(planStart, 'HH:mm').add(nextPlan.total_time_planning, 'minutes').format("HH:mm")
+          const today = moment().format('dddd').toLocaleLowerCase();
+          const noPlanMachine = await this.noPlanMachineService.findOneByShift(
+            nextPlan.shift,
+            today,
           );
+        // cek no plan additional
+        let totalNoPlanMachine = 0;
+        noPlanMachine.map((res) => {
+            const isWithinTimeRange =
+            moment(res.time_in, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) &&
+            moment(res.time_out, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm'));
+          if (isWithinTimeRange) {
+            totalNoPlanMachine += res.total;
+          }
+        });
+
+          // await axios.post(
+          //   `${process.env.SERVICE_PRODUCTION}/production/stopped`,
+          //   {
+          //     clientId: activePlan.client_id,
+          //     planning_production_id: activePlan.id,
+          //   },
+          // );
 
           await this.planningProductionRepository.update(nextPlan.id, {
             active_plan: true,
             dandory_time: null,
             date_time_in: moment().toDate(),
+            qty_per_minute:  nextPlan.qty_per_minute = Number((nextPlan.qty_planning / (nextPlan.total_time_planning - totalNoPlanMachine)).toFixed(2))
           });
           await this.planningProductionRepository.update(activePlan.id, {
             active_plan: false,
@@ -359,23 +401,43 @@ export class PlanningProductionService {
         return `Plan has been Stopped, Activate Next Plan`;
       } else {
         // for save last production
-        await axios.post(
-          `${process.env.SERVICE_PRODUCTION}/production/stopped`,
-          {
-            clientId: activePlan.client_id,
-            planning_production_id: activePlan.id,
-          },
-        );
+        // await axios.post(
+        //   `${process.env.SERVICE_PRODUCTION}/production/stopped`,
+        //   {
+        //     clientId: activePlan.client_id,
+        //     planning_production_id: activePlan.id,
+        //   },
+        // );
         await this.planningProductionRepository.update(activePlan.id, {
           active_plan: false,
           date_time_out: activePlanDateTimeOut,
           total_time_actual: differenceTime,
-          qty_per_minute: parseFloat(qty.toFixed(2)),
+          // qty_per_minute: parseFloat(qty.toFixed(2)),
           qty_per_hour: Math.round(qty * 60),
+        });
+
+         // for save last production
+         const planStart = moment().format("HH:mm")
+         const planEnd = moment(planStart, 'HH:mm').add(nextPlan.total_time_planning, 'minutes').format("HH:mm")
+         const today = moment().format('dddd').toLocaleLowerCase();
+         const noPlanMachine = await this.noPlanMachineService.findOneByShift(
+           nextPlan.shift.id,
+           today,
+         );
+        // cek no plan additional
+        let totalNoPlanMachine = 0;
+        noPlanMachine.map((res) => {
+            const isWithinTimeRange =
+            moment(res.time_in, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) &&
+            moment(res.time_out, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm'));
+          if (isWithinTimeRange) {
+            totalNoPlanMachine += res.total;
+          }
         });
         await this.planningProductionRepository.update(nextPlan.id, {
           active_plan: true,
           date_time_in: moment().toDate(),
+          qty_per_minute:  nextPlan.qty_per_minute = Number((nextPlan.qty_planning / (nextPlan.total_time_planning - totalNoPlanMachine)).toFixed(2))
         });
         const newNextPlan = this.planningProductionRepository.findOne({
           where: { id: nextPlan.id, client_id },
@@ -384,31 +446,31 @@ export class PlanningProductionService {
       }
     }
     // for save last production
-    await axios.post(`${process.env.SERVICE_PRODUCTION}/production/stopped`, {
-      clientId: activePlan.client_id,
-      planning_production_id: activePlan.id,
-    });
+    // await axios.post(`${process.env.SERVICE_PRODUCTION}/production/stopped`, {
+    //   clientId: activePlan.client_id,
+    //   planning_production_id: activePlan.id,
+    // });
 
     await this.planningProductionRepository.update(activePlan.id, {
       active_plan: false,
       date_time_out: activePlanDateTimeOut,
       total_time_actual: differenceTime,
-      qty_per_minute: parseFloat(qty.toFixed(2)),
+      // qty_per_minute: parseFloat(qty.toFixed(2)),
       qty_per_hour: Math.round(qty * 60),
     });
 
     // for create report
-    activePlan.date_time_out = activePlanDateTimeOut;
-    activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
-    activePlan.qty_per_hour = Math.round(qty * 60);
-    activePlan.total_time_actual = differenceTime;
-    await this.planningProductionReportService.create(
-      { planning: activePlan },
-      token,
-    );
+    // activePlan.date_time_out = activePlanDateTimeOut;
+    // activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
+    // activePlan.qty_per_hour = Math.round(qty * 60);
+    // activePlan.total_time_actual = differenceTime;
+    // await this.planningProductionReportService.create(
+    //   { planning: activePlan },
+    //   token,
+    // );
 
     // for Create report shift
-    await this.reportShiftService.saveReportIfStop(activePlan);
+    // await this.reportShiftService.saveReportIfStop(activePlan);
 
     // return 'All Plan In Queue Has Been Finished';
     return 'No Plan In Queue, No Active Plan';

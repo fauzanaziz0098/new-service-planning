@@ -27,7 +27,7 @@ export class ShiftService {
   }
 
   findAll(client_id: string) {
-    return this.shiftRepository.find({ where: { client_id: client_id } });
+    return this.shiftRepository.find({ where: { client_id: client_id }, order: {id: 'ASC'} });
   }
 
   async findAllWithoutFilterClient() {

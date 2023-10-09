@@ -32,8 +32,8 @@ export class NoPlanMachineService {
     const timeStart = await this.convertTime(shift.time_start);
     const timeEnd = await this.convertTime(shift.time_end);
 
-    const timeIn = await this.convertTime(createNoPlanMachineDto.time_in);
-    const timeOut = await this.convertTime(createNoPlanMachineDto.time_out);
+    const timeIn = (moment(createNoPlanMachineDto.time_in).hour() * 60) + moment(createNoPlanMachineDto.time_in).minute();
+    const timeOut = (moment(createNoPlanMachineDto.time_out).hour() * 60) + moment(createNoPlanMachineDto.time_out).minute();
 
     const noPlanInDayExist = await this.noPlanMachineRepository.find({
       where: {
@@ -136,16 +136,19 @@ export class NoPlanMachineService {
     const timeStart = await this.convertTime(shift.time_start);
     const timeEnd = await this.convertTime(shift.time_end);
 
-    const timeIn = await this.convertTime(
-      updateNoPlanMachineDto.time_in
-        ? updateNoPlanMachineDto.time_in
-        : noPlanMachine.time_in,
-    );
-    const timeOut = await this.convertTime(
-      updateNoPlanMachineDto.time_out
-        ? updateNoPlanMachineDto.time_out
-        : noPlanMachine.time_out,
-    );
+    // const timeIn = await this.convertTime(
+    //   updateNoPlanMachineDto.time_in
+    //     ? updateNoPlanMachineDto.time_in
+    //     : noPlanMachine.time_in,
+    // );
+    // const timeOut = await this.convertTime(
+    //   updateNoPlanMachineDto.time_out
+    //     ? updateNoPlanMachineDto.time_out
+    //     : noPlanMachine.time_out,
+    // );
+
+    const timeIn = (moment(updateNoPlanMachineDto.time_in ? updateNoPlanMachineDto.time_in : noPlanMachine.time_in).hour() * 60) + moment(updateNoPlanMachineDto.time_in ? updateNoPlanMachineDto.time_in : noPlanMachine.time_in).minute();
+    const timeOut = (moment(updateNoPlanMachineDto.time_out ? updateNoPlanMachineDto.time_out : noPlanMachine.time_out).hour() * 60) + moment(updateNoPlanMachineDto.time_out ? updateNoPlanMachineDto.time_out : noPlanMachine.time_out).minute();
 
     if (
       timeIn >= timeStart &&
@@ -200,5 +203,17 @@ export class NoPlanMachineService {
       return noPlanMachine;
     }
     return [];
+  }
+
+  async findAllByShift(shiftId: string) {
+    const noPlanMachine = await this.noPlanMachineRepository
+      .createQueryBuilder('no_plan_machine')
+      .leftJoinAndSelect('no_plan_machine.shift', 'shift')
+      .where('shift.id = :id', {
+        id: shiftId,
+      })
+      .getMany();
+
+    return noPlanMachine;
   }
 }
