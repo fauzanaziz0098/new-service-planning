@@ -21,6 +21,7 @@ import { PlanningProductionReportService } from 'src/planning-production-report/
 import { NoPlanMachineAdditionalService } from 'src/no-plan-machine-additional/no-plan-machine-additional.service';
 import { ReportShiftService } from 'src/report-shift/report-shift.service';
 import axios from 'axios';
+import { ConditionMachineProductionService } from 'src/condition-machine-production/condition-machine-production.service';
 
 @Injectable()
 export class PlanningProductionService {
@@ -42,6 +43,8 @@ export class PlanningProductionService {
     private noPlanMachineAdditionalService: NoPlanMachineAdditionalService,
     @Inject(forwardRef(() => ReportShiftService))
     private reportShiftService: ReportShiftService,
+    @Inject(forwardRef(() => ConditionMachineProductionService))
+    private conditionMachineProductionService: ConditionMachineProductionService,
   ) {
     this.initializeMqttClient();
   }

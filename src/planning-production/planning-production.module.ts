@@ -11,6 +11,7 @@ import { PlanningProductionReport } from '../planning-production-report/entities
 import { PlanningProductionReportModule } from 'src/planning-production-report/planning-production-report.module';
 import { NoPlanMachineAdditionalModule } from 'src/no-plan-machine-additional/no-plan-machine-additional.module';
 import { ReportShiftModule } from 'src/report-shift/report-shift.module';
+import { ConditionMachineProductionModule } from 'src/condition-machine-production/condition-machine-production.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ReportShiftModule } from 'src/report-shift/report-shift.module';
     forwardRef(() => PlanningProductionReportModule),
     forwardRef(() => NoPlanMachineAdditionalModule),
     forwardRef(() => ReportShiftModule),
+    forwardRef(() => ConditionMachineProductionModule),
   ],
   controllers: [PlanningProductionController],
   providers: [PlanningProductionService],

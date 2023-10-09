@@ -62,24 +62,11 @@ export class PlanningProductionReportService {
     createPlanningProductionReportDto: CreatePlanningProductionReportDto,
     token: string,
   ) {
-    // client_id: activePlan.client_id,
-    //   // SHIFT
-    //   shift: activePlan.shift.name,
-    //   time_start: activePlan.shift.time_start,
-    //   time_end: activePlan.shift.time_end,
-    //   // product
-    //   product_part_name: activePlan.product.part_name,
-    //   product_part_number: activePlan.product.part_number,
-    //   product_cycle_time: activePlan.product.cycle_time,
-    //   // MCHINE
-    //   machine_name: activePlan.machine.name,
-    //   machine_number: activePlan.machine.number,
-    //   // PLANNING
-    //   qty_planning: activePlan.qty_planning,
-    //   planning_date_time_in: activePlan.date_time_in,
-    //   planning_date_time_out: activePlanDateTimeOut,
-    //   planning_total: activePlan.total_time_planning,
-    // if after save buat line stop report
+    const lastProduction = (
+      await axios.get(
+        `${process.env.SERVICE_PER_JAM}/production/last-production${createPlanningProductionReportDto.planning.id}`,
+      )
+    ).data.data;
 
     const saveData = await this.planningProductionReportRepository.save({
       client_id: createPlanningProductionReportDto.planning.client_id,
@@ -120,6 +107,7 @@ export class PlanningProductionReportService {
         createPlanningProductionReportDto.planning.total_time_planning,
 
       oprator: createPlanningProductionReportDto.planning.user,
+      production_qty_actual: Number(lastProduction.qty_actual),
     });
 
     const respons = (
