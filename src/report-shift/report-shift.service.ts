@@ -114,6 +114,8 @@ export class ReportShiftService {
     const durationInSeconds = endTime.diff(startTime, 'seconds');
 
     const reportShift = new ReportShift();
+    console.log(planning);
+
     reportShift.client_id = planning.client_id;
     reportShift.machine_name = planning.machine.name;
     reportShift.product_part_name = planning.product.part_name;

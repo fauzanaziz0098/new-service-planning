@@ -17,7 +17,7 @@ export class ReportShift {
   @Column()
   product_part_number: string;
 
-  @Column()
+  @Column('numeric')
   product_cycle_time: number;
 
   @Column()
@@ -29,19 +29,19 @@ export class ReportShift {
   @Column()
   shift: string;
 
-  @Column({ nullable: true })
+  @Column('numeric', { nullable: true })
   no_plan: number;
 
-  @Column({ type: 'float', nullable: true })
+  @Column('numeric', { nullable: true })
   qty_plan: number;
 
-  @Column()
+  @Column('numeric')
   qty_actual: number;
 
-  @Column()
+  @Column('numeric')
   planning_id: number;
 
-  @Column()
+  @Column('numeric')
   total_planning: number;
 
   @Column()
