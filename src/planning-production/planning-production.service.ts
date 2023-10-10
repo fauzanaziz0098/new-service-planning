@@ -93,6 +93,7 @@ export class PlanningProductionService {
     });
 
     this.client.on("message", (topic, message: any) => {
+      const topicSplit = topic.split(":")[0]
       message = JSON.parse(message)
       message.OperatorId = [plan?.user];
       message.ShiftName = [plan?.shift?.name ?? ''];
@@ -100,7 +101,7 @@ export class PlanningProductionService {
       const sendVariable = JSON.stringify(message);
       if (plan) {
         this.client.publish(
-          `MC${machineId}:PLAN:RPA`,
+          `${topicSplit}:PLAN:RPA`,
           sendVariable,
           { qos: 2, retain: true },
           (error) => {
@@ -360,13 +361,13 @@ export class PlanningProductionService {
       );
       if (nextPlan.dandory_time != 0) {
         // for save last production
-        // await axios.post(
-        //   `${process.env.SERVICE_PRODUCTION}/production/stopped`,
-        //   {
-        //     clientId: activePlan.client_id,
-        //     planning_production_id: activePlan.id,
-        //   },
-        // );
+        await axios.post(
+          `${process.env.SERVICE_PRODUCTION}/production/stopped`,
+          {
+            clientId: activePlan.client_id,
+            planning_production_id: activePlan.id,
+          },
+        );
 
         await this.planningProductionRepository.update(activePlan.id, {
           // active_plan: false,
@@ -396,13 +397,13 @@ export class PlanningProductionService {
           }
         });
 
-          // await axios.post(
-          //   `${process.env.SERVICE_PRODUCTION}/production/stopped`,
-          //   {
-          //     clientId: activePlan.client_id,
-          //     planning_production_id: activePlan.id,
-          //   },
-          // );
+          await axios.post(
+            `${process.env.SERVICE_PRODUCTION}/production/stopped`,
+            {
+              clientId: activePlan.client_id,
+              planning_production_id: activePlan.id,
+            },
+          );
 
           await this.planningProductionRepository.update(nextPlan.id, {
             active_plan: true,
@@ -426,13 +427,13 @@ export class PlanningProductionService {
         return `Plan has been Stopped, Activate Next Plan`;
       } else {
         // for save last production
-        // await axios.post(
-        //   `${process.env.SERVICE_PRODUCTION}/production/stopped`,
-        //   {
-        //     clientId: activePlan.client_id,
-        //     planning_production_id: activePlan.id,
-        //   },
-        // );
+        await axios.post(
+          `${process.env.SERVICE_PRODUCTION}/production/stopped`,
+          {
+            clientId: activePlan.client_id,
+            planning_production_id: activePlan.id,
+          },
+        );
         await this.planningProductionRepository.update(activePlan.id, {
           active_plan: false,
           date_time_out: activePlanDateTimeOut,
@@ -471,10 +472,10 @@ export class PlanningProductionService {
       }
     }
     // for save last production
-    // await axios.post(`${process.env.SERVICE_PRODUCTION}/production/stopped`, {
-    //   clientId: activePlan.client_id,
-    //   planning_production_id: activePlan.id,
-    // });
+    await axios.post(`${process.env.SERVICE_PRODUCTION}/production/stopped`, {
+      clientId: activePlan.client_id,
+      planning_production_id: activePlan.id,
+    });
 
     await this.planningProductionRepository.update(activePlan.id, {
       active_plan: false,
@@ -485,17 +486,17 @@ export class PlanningProductionService {
     });
 
     // for create report
-    // activePlan.date_time_out = activePlanDateTimeOut;
-    // activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
-    // activePlan.qty_per_hour = Math.round(qty * 60);
-    // activePlan.total_time_actual = differenceTime;
-    // await this.planningProductionReportService.create(
-    //   { planning: activePlan },
-    //   token,
-    // );
+    activePlan.date_time_out = activePlanDateTimeOut;
+    activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
+    activePlan.qty_per_hour = Math.round(qty * 60);
+    activePlan.total_time_actual = differenceTime;
+    await this.planningProductionReportService.create(
+      { planning: activePlan },
+      token,
+    );
 
     // for Create report shift
-    // await this.reportShiftService.saveReportIfStop(activePlan);
+    await this.reportShiftService.saveReportIfStop(activePlan);
 
     // return 'All Plan In Queue Has Been Finished';
     return 'No Plan In Queue, No Active Plan';
