@@ -94,22 +94,25 @@ export class PlanningProductionService {
 
     this.client.on("message", (topic, message: any) => {
       const topicSplit = topic.split(":")[0]
-      message = JSON.parse(message)
-      message.OperatorId = [plan?.user];
-      message.ShiftName = [plan?.shift?.name ?? ''];
-      message.clientId = [plan?.client_id];
-      const sendVariable = JSON.stringify(message);
-      if (plan) {
-        this.client.publish(
-          `${topicSplit}:PLAN:RPA`,
-          sendVariable,
-          { qos: 2, retain: true },
-          (error) => {
-            if (error) {
-              console.error('Error publishing message:', error);
-            }
-          },
-        );
+      
+      if (topicSplit.replace("MC", "") == plan.machine.id) {
+        message = JSON.parse(message)
+        message.OperatorId = [plan?.user];
+        message.ShiftName = [plan?.shift?.name ?? ''];
+        message.clientId = [plan?.client_id];
+        const sendVariable = JSON.stringify(message);
+        if (plan) {
+          this.client.publish(
+            `${topicSplit}:PLAN:RPA`,
+            sendVariable,
+            { qos: 2, retain: true },
+            (error) => {
+              if (error) {
+                console.error('Error publishing message:', error);
+              }
+            },
+          );
+        }
       }
     })
   }
