@@ -49,7 +49,7 @@ export class PlanningProductionService {
     this.initializeMqttClient();
   }
 
-  private initializeMqttClient() {
+  private async initializeMqttClient() {
     const connectUrl = process.env.MQTT_CONNECTION;
 
     this.client = mqtt.connect(connectUrl, {
@@ -64,63 +64,86 @@ export class PlanningProductionService {
     this.client.on('connect', () => {
       console.log('MQTT client connected');
     });
+    
+    const getPlanActiveAll = await this.getPlanningActiveAll()
 
-    this.subscribeToTopic();
+    if (getPlanActiveAll.length != 0) {
+      getPlanActiveAll.map(plan => {
+        this.subscribeToTopic(plan.machine.id, plan);
+      })
+    }
 
-    this.client.on('message', (topic, message) => {
-      if (message) {
-        // this.publish();
-        this.publishMessage(topic, JSON.parse(message.toString()));
-      }
-    });
+    // this.client.on('message', (topic, message) => {
+    //   if (message) {
+    //     // this.publish();
+    //     this.publishMessage(topic, JSON.parse(message.toString()));
+    //   }
+    // });
 
     this.client.on('error', (error) => {
       console.log('Connection failed:', error);
     });
   }
 
-  private subscribeToTopic() {
-    const machineId = [1];
-    machineId.map((id) => {
-      this.client.subscribe(`MC${id}:STOP:RPA`, { qos: 2 }, (err) => {
-        if (err) {
-          console.log(`Error subscribe topic : MC${id}:PLAN:RPA`, err);
-        }
-      });
+  private subscribeToTopic(machineId: any, plan) {
+    this.client.subscribe(`MC${machineId}:STOP:RPA`, { qos: 2 }, (err) => {
+      if (err) {
+        console.log(`Error subscribe topic : MC${machineId}:PLAN:RPA`, err);
+      }
     });
+
+    this.client.on("message", (topic, message: any) => {
+      message = JSON.parse(message)
+      message.OperatorId = [plan?.user];
+      message.ShiftName = [plan?.shift?.name ?? ''];
+      message.clientId = [plan?.client_id];
+      const sendVariable = JSON.stringify(message);
+      if (plan) {
+        this.client.publish(
+          `MC${machineId}:PLAN:RPA`,
+          sendVariable,
+          { qos: 2, retain: true },
+          (error) => {
+            if (error) {
+              console.error('Error publishing message:', error);
+            }
+          },
+        );
+      }
+    })
   }
 
-  private async publishMessage(
-    topic: string,
-    message: VariablePlanningProduction,
-  ) {
-    const activePlanProduction =
-      await this.planningProductionRepository.findOne({
-        where: { active_plan: true },
-        relations: ['shift'],
-      });
-    const topicSplit = topic.split(':')[0];
-    // delete message.qty_actual;
-    // delete message.qty_hour;
-    console.log(message);
+  // private async publishMessage(
+  //   topic: string,
+  //   message: VariablePlanningProduction,
+  // ) {
+  //   const activePlanProduction =
+  //     await this.planningProductionRepository.findOne({
+  //       where: { active_plan: true },
+  //       relations: ['shift'],
+  //     });
+  //   const topicSplit = topic.split(':')[0];
+  //   // delete message.qty_actual;
+  //   // delete message.qty_hour;
+  //   console.log(message);
 
-    message.OperatorId = [activePlanProduction?.user];
-    message.ShiftName = [activePlanProduction?.shift?.name ?? ''];
-    message.clientId = [activePlanProduction?.client_id];
-    const sendVariable = JSON.stringify(message);
-    if (activePlanProduction) {
-      this.client.publish(
-        `${topicSplit}:PLAN:RPA`,
-        sendVariable,
-        { qos: 2, retain: true },
-        (error) => {
-          if (error) {
-            console.error('Error publishing message:', error);
-          }
-        },
-      );
-    }
-  }
+  //   message.OperatorId = [activePlanProduction?.user];
+  //   message.ShiftName = [activePlanProduction?.shift?.name ?? ''];
+  //   message.clientId = [activePlanProduction?.client_id];
+  //   const sendVariable = JSON.stringify(message);
+  //   if (activePlanProduction) {
+  //     this.client.publish(
+  //       `${topicSplit}:PLAN:RPA`,
+  //       sendVariable,
+  //       { qos: 2, retain: true },
+  //       (error) => {
+  //         if (error) {
+  //           console.error('Error publishing message:', error);
+  //         }
+  //       },
+  //     );
+  //   }
+  // }
 
   // CREATE PLANNING PRODUCTION
   async createPlanningProduction(
@@ -514,40 +537,40 @@ export class PlanningProductionService {
     return minute;
   }
 
-  async initializeMqttClientSpesifikMachine(machineId: number) {
-    const connectUrl = process.env.MQTT_CONNECTION;
+  // async initializeMqttClientSpesifikMachine(machineId: number) {
+  //   const connectUrl = process.env.MQTT_CONNECTION;
 
-    this.client = mqtt.connect(connectUrl, {
-      clientId: `mqtt_nest_${Math.random().toString(16).slice(3)}`,
-      clean: true,
-      connectTimeout: 4000,
-      username: '',
-      password: '',
-      reconnectPeriod: 1000,
-    });
+  //   this.client = mqtt.connect(connectUrl, {
+  //     clientId: `mqtt_nest_${Math.random().toString(16).slice(3)}`,
+  //     clean: true,
+  //     connectTimeout: 4000,
+  //     username: '',
+  //     password: '',
+  //     reconnectPeriod: 1000,
+  //   });
 
-    this.client.on('connect', () => {
-      console.log('MQTT client connected');
-    });
+  //   this.client.on('connect', () => {
+  //     console.log('MQTT client connected');
+  //   });
 
-    this.client.subscribe(`MC${machineId}:STOP:RPA`, { qos: 2 }, (err) => {
-      if (err) {
-        console.log(`Error subscribe topic : MC${machineId}:PLAN:RPA`, err);
-      }
-    });
+  //   this.client.subscribe(`MC${machineId}:STOP:RPA`, { qos: 2 }, (err) => {
+  //     if (err) {
+  //       console.log(`Error subscribe topic : MC${machineId}:PLAN:RPA`, err);
+  //     }
+  //   });
 
-    this.client.on('message', (topic, message) => {
-      if (message) {
-        // this.publish();
-        return JSON.parse(message.toString());
-      }
-    });
+  //   this.client.on('message', (topic, message) => {
+  //     if (message) {
+  //       // this.publish();
+  //       return JSON.parse(message.toString());
+  //     }
+  //   });
 
-    this.client.on('error', (error) => {
-      console.log('Connection failed:', error);
-    });
-    this.client.end();
-  }
+  //   this.client.on('error', (error) => {
+  //     console.log('Connection failed:', error);
+  //   });
+  //   this.client.end();
+  // }
 
   async getPlanningActive(cleintId: string) {
     return await this.planningProductionRepository.find({
@@ -558,4 +581,15 @@ export class PlanningProductionService {
       relations: ['machine', 'product', 'shift'],
     });
   }
+
+  getPlanningActiveAll() {
+    return this.planningProductionRepository.find({
+      where: {
+        active_plan: true,
+      },
+      relations: ['machine', 'product', 'shift'],
+    });
+  }
+
+  
 }
