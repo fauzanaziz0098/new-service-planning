@@ -24,8 +24,8 @@ export class NoPlanMachineController {
   constructor(private readonly noPlanMachineService: NoPlanMachineService) {}
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['CREATE:NOPLAN'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['CREATE:NOPLAN'])
   @Post()
   create(
     @Body(new ValidationPipe()) createNoPlanMachineDto: CreateNoPlanMachineDto,
@@ -43,16 +43,16 @@ export class NoPlanMachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['VIEW:NOPLAN'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['VIEW:NOPLAN'])
   @Get()
   findAll(@Req() request: Request) {
     return this.noPlanMachineService.findAll(request.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['SHOW:NOPLAN'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['SHOW:NOPLAN'])
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.noPlanMachineService.findOne(+id);
@@ -65,8 +65,8 @@ export class NoPlanMachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['UPDATE:NOPLAN'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['UPDATE:NOPLAN'])
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -84,8 +84,8 @@ export class NoPlanMachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['DELETE:NOPLAN'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['DELETE:NOPLAN'])
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.noPlanMachineService.remove(+id);

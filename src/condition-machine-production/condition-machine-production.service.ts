@@ -63,10 +63,16 @@ export class ConditionMachineProductionService {
   }
 
   async findAll(query: PaginateQuery, user: VariableUserLogin) {
+
+    const planningActive:any = (
+      await this.planningProductionService.getPlanningActive(user.client)
+    )
+    
     const queryBuilder = this.conditionMachineProductionRepository
       .createQueryBuilder('conditionMachineProduction')
       .leftJoinAndSelect('conditionMachineProduction.conditionMachine', 'conditionMachine')
-      .where('conditionMachineProduction.clientId = :client', { client: user.client });
+      .where('conditionMachineProduction.clientId = :client', { client: user.client })
+      .andWhere('conditionMachineProduction.planningId = :planningId', { planningId: planningActive[0].id})
 
     const config: PaginateConfig<ConditionMachineProduction> = {
       sortableColumns: ['id'],

@@ -94,11 +94,11 @@ export class PlanningProductionService {
 
     this.client.on("message", (topic, message: any) => {
       const topicSplit = topic.split(":")[0]
-      
+      console.log(topicSplit.replace("MC", "") == plan.machine.id);
       if (topicSplit.replace("MC", "") == plan.machine.id) {
         message = JSON.parse(message)
         message.OperatorId = [plan?.user];
-        message.ShiftName = [plan?.shift?.name ?? ''];
+        message.ShiftName = [plan?.shift?.name ? plan.shift.name : ''];
         message.clientId = [plan?.client_id];
         const sendVariable = JSON.stringify(message);
         if (plan) {
@@ -322,7 +322,7 @@ export class PlanningProductionService {
     const nextPlan = await this.planningProductionRepository.findOne({
       where: { id: MoreThan(activePlan.id), client_id },
       order: { id: 'asc' },
-      relations: ['product', 'machine'],
+      relations: ['product', 'machine', 'shift'],
     });
 
     const today = moment().format('dddd').toLocaleLowerCase();
@@ -381,7 +381,6 @@ export class PlanningProductionService {
           qty_per_hour: Math.round(qty * 60),
         });
         setTimeout(async () => {
-          // for save last production
           const planStart = moment().format("HH:mm")
           const planEnd = moment(planStart, 'HH:mm').add(nextPlan.total_time_planning, 'minutes').format("HH:mm")
           const today = moment().format('dddd').toLocaleLowerCase();
@@ -399,7 +398,8 @@ export class PlanningProductionService {
             totalNoPlanMachine += res.total;
           }
         });
-
+        
+          // for save last production
           await axios.post(
             `${process.env.SERVICE_PRODUCTION}/production/stopped`,
             {

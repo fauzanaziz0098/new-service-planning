@@ -64,4 +64,9 @@ export class PlanningProductionController {
       request.user['client'],
     );
   }
+
+  @Get("find-all-active")
+  getAllActivePlan() {
+    return this.planningProductionService.getPlanningActiveAll()
+  }
 }

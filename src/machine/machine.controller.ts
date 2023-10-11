@@ -24,8 +24,8 @@ export class MachineController {
   constructor(private readonly machineService: MachineService) {}
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['CREATE:MACHINE'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['CREATE:MACHINE'])
   @Post()
   create(
     @Body(new ValidationPipe()) createMachineDto: CreateMachineDto,
@@ -36,8 +36,8 @@ export class MachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['VIEW:MACHINE'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['VIEW:MACHINE'])
   @Get()
   findAll(@Paginate() query: PaginateQuery, @Req() req: Request) {
     return this.machineService.findAll(query, req.user['client']);
@@ -55,8 +55,8 @@ export class MachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['UPDATE:MACHINE'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['UPDATE:MACHINE'])
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -72,16 +72,16 @@ export class MachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['DELETE:MACHINE'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['DELETE:MACHINE'])
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: Request) {
     return this.machineService.remove(+id, req.user['client'], req.user);
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['DELETE:MACHINE'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['DELETE:MACHINE'])
   @Post('delete/many')
   async removeMany(@Body('ids') ids: string[], @Req() req: Request) {
     return this.machineService.removeMany(ids, req.user['client'], req.user);
