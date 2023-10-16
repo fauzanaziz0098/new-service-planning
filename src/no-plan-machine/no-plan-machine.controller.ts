@@ -87,8 +87,8 @@ export class NoPlanMachineController {
   // @UseGuards(PermissionsGuard)
   // @SetMetadata('permissions', ['DELETE:NOPLAN'])
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.noPlanMachineService.remove(+id);
+  remove(@Param('id') id: string, @Req() req: Request) {
+    return this.noPlanMachineService.remove(+id, req.user['client']);
   }
 
   @Get('findOneByShift/:shiftId')

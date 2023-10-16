@@ -29,6 +29,13 @@ export class NoPlanMachineService {
     const shift = await this.shiftService.findOne(
       +createNoPlanMachineDto.shift,
     );
+
+    const activePlan = await this.planningProductionService.getPlanningProduction(createNoPlanMachineDto.client_id)
+
+    if (activePlan.shift.id == shift.id) {
+      throw new HttpException("Cannot create no plan if shift still used", HttpStatus.BAD_REQUEST);
+    }
+
     const timeStart = await this.convertTime(shift.time_start);
     const timeEnd = await this.convertTime(shift.time_end);
 
@@ -170,11 +177,17 @@ export class NoPlanMachineService {
     throw new HttpException('Out Range Shift', HttpStatus.BAD_REQUEST);
   }
 
-  async remove(id: number) {
+  async remove(id: number, clientId) {
     const noPlanMachine = await this.noPlanMachineRepository.findOne({
       where: { id: id },
       relations: ['shift'],
     });
+    const activePlan = await this.planningProductionService.getPlanningProduction(clientId);
+
+    if (activePlan.shift.id == noPlanMachine.shift.id) {
+      throw new HttpException("Cannot delete no plan when shift used", HttpStatus.BAD_REQUEST);
+    }
+
     if (noPlanMachine) {
       await this.noPlanMachineRepository.delete(id);
       return 'No Plan Machine Deleted';
