@@ -57,9 +57,9 @@ export class MachineService {
       .where('machine.client_id = :client_id', { client_id: client_id });
     var filterableColumns = {};
     if (query.filter?.['name']) {
-      filterableColumns['name'] = [FilterOperator.EQ];
+      const nameFilter = `%${query.filter['name']}%`;
+      queryBuilder.andWhere('machine.name ILIKE :name', { name: nameFilter });
     }
-
     const config: PaginateConfig<Machine> = {
       sortableColumns: ['id'],
       searchableColumns: ['name'],

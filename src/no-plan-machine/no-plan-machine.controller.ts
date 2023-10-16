@@ -90,4 +90,10 @@ export class NoPlanMachineController {
   remove(@Param('id') id: string) {
     return this.noPlanMachineService.remove(+id);
   }
+
+  @Get('findOneByShift/:shiftId')
+  async findOneByShiftAndDay(@Param("shiftId") shiftId: any) {
+    const day = moment().format('dddd')?.toLowerCase()
+    return this.noPlanMachineService.findOneByShift(shiftId, day)    
+  }
 }

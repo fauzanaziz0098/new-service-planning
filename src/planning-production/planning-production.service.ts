@@ -22,6 +22,7 @@ import { NoPlanMachineAdditionalService } from 'src/no-plan-machine-additional/n
 import { ReportShiftService } from 'src/report-shift/report-shift.service';
 import axios from 'axios';
 import { ConditionMachineProductionService } from 'src/condition-machine-production/condition-machine-production.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class PlanningProductionService {
@@ -94,7 +95,7 @@ export class PlanningProductionService {
 
     this.client.on("message", (topic, message: any) => {
       const topicSplit = topic.split(":")[0]
-      console.log(topicSplit.replace("MC", "") == plan.machine.id);
+      // console.log(topicSplit.replace("MC", "") == plan.machine.id);
       if (topicSplit.replace("MC", "") == plan.machine.id) {
         message = JSON.parse(message)
         message.OperatorId = [plan?.user];
@@ -149,6 +150,72 @@ export class PlanningProductionService {
   //   }
   // }
 
+  @Cron(CronExpression.EVERY_MINUTE)
+  private async resetTotal() {
+    const allActivePlan = await this.getPlanningActiveAll()
+    const timeNow = moment().format("HH:mm")
+    const messageShiftTrue = {
+      ResetTotal: [true]
+    }
+    const messageShiftFalse = {
+      ResetTotal: [false]
+    }
+    allActivePlan.map(item => {
+      // Jika waktu sekarang sama dengan waktu shift dimulai
+      if (moment(timeNow, "HH:mm").isSame(moment(item.shift.time_start, "HH:mm"))) {
+          this.client.publish(`MC${item.machine.id}:DR:RPA`,JSON.stringify(messageShiftTrue),{ qos: 2, retain: true },
+            (error) => {
+              if (error) {
+                console.error('Error publishing message:', error);
+              }
+            }
+          );
+        setTimeout(() => {
+          this.client.publish(`MC${item.machine.id}:DR:RPA`,JSON.stringify(messageShiftFalse),{ qos: 2, retain: true },
+            (error) => {
+              if (error) {
+                console.error('Error publishing message:', error);
+              }
+            }
+          );
+        }, 2000);
+      }
+      
+      // Jika waktu sekarang sama dengan waktu shift berakhir
+      if (moment(timeNow, "HH:mm").isSame(moment(item.shift.time_end, "HH:mm"))) {
+          this.client.publish(`MC${item.machine.id}:DR:RPA`,JSON.stringify(messageShiftTrue),{ qos: 2, retain: true },
+            (error) => {
+              if (error) {
+                console.error('Error publishing message:', error);
+              }
+            }
+          );
+        setTimeout(() => {
+          this.client.publish(`MC${item.machine.id}:DR:RPA`,JSON.stringify(messageShiftFalse),{ qos: 2, retain: true },
+            (error) => {
+              if (error) {
+                console.error('Error publishing message:', error);
+              }
+            }
+          );
+        }, 2000);
+      }
+    })
+  }
+
+  private async resetPlanStatus(machineId, variable) {
+    let message = {
+      PlanStatus: [variable]
+    }
+    const sendVariable = JSON.stringify(message);
+    this.client.publish(`MC${machineId}:DR:RPA`,sendVariable,{ qos: 2, retain: true },
+      (error) => {
+        if (error) {
+          console.error('Error publishing message:', error);
+        }
+      },
+    );
+  }
   // CREATE PLANNING PRODUCTION
   async createPlanningProduction(
     createPlanningProductionDto: CreatePlanningProductionDto,
@@ -221,9 +288,11 @@ export class PlanningProductionService {
     );
     // jika tidak ada plan yang aktif dan tidak ada dandory time, AKTIF
     if (!isActivePlan) {
+      // reset plan status mqtt activePlan start plan
+      this.resetPlanStatus(createPlanningProductionDto.machine, false)
       const planStart = moment().format("HH:mm")
       const planEnd = moment(planStart, 'HH:mm').add(totalTimePlanning, 'minutes').format("HH:mm")
-      console.log(planStart, 'start', planEnd, 'end');
+      // console.log(planStart, 'start', planEnd, 'end');
       
 
       const today = moment().format('dddd').toLocaleLowerCase();
@@ -354,7 +423,9 @@ export class PlanningProductionService {
     const differenceTime =
       (await this.convertTime(timeOut)) - (await this.convertTime(timeIn));
 
-    const qty = activePlan.qty_planning / (differenceTime - totalNoPlanMachine);
+    // const qty = activePlan.qty_planning / (differenceTime - totalNoPlanMachine);
+    const qty = activePlan.qty_planning / ((differenceTime - totalNoPlanMachine) == 0 ? 1 : (differenceTime - totalNoPlanMachine));
+
 
     if (nextPlan) {
       const machine = await this.machineService.findOne(+nextPlan.machine.id);
@@ -381,11 +452,13 @@ export class PlanningProductionService {
           qty_per_hour: Math.round(qty * 60),
         });
         setTimeout(async () => {
+          // reset plan status mqtt nextPlan start plan
+          this.resetPlanStatus(nextPlan.machine.id, false)
           const planStart = moment().format("HH:mm")
           const planEnd = moment(planStart, 'HH:mm').add(nextPlan.total_time_planning, 'minutes').format("HH:mm")
           const today = moment().format('dddd').toLocaleLowerCase();
           const noPlanMachine = await this.noPlanMachineService.findOneByShift(
-            nextPlan.shift,
+            nextPlan.shift.id,
             today,
           );
         // cek no plan additional
@@ -429,6 +502,9 @@ export class PlanningProductionService {
         }
         return `Plan has been Stopped, Activate Next Plan`;
       } else {
+        // reset plan status mqtt nextPlan start plan
+        this.resetPlanStatus(nextPlan.machine.id, false)
+
         // for save last production
         await axios.post(
           `${process.env.SERVICE_PRODUCTION}/production/stopped`,
@@ -474,6 +550,8 @@ export class PlanningProductionService {
         return `Plan has been Stopped, Activate Next Plan`;
       }
     }
+    // reset plan status mqtt activePlan stop plan
+    this.resetPlanStatus(activePlan.machine.id, true)
     // for save last production
     await axios.post(`${process.env.SERVICE_PRODUCTION}/production/stopped`, {
       clientId: activePlan.client_id,

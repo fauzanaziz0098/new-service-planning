@@ -16,6 +16,7 @@ import { UpdateShiftDto } from './dto/update-shift.dto';
 import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import * as moment from 'moment';
+import { Paginate, PaginateQuery } from 'nestjs-paginate';
 
 @Controller('shift')
 export class ShiftController {
@@ -40,8 +41,8 @@ export class ShiftController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
-  findAll(@Req() request: Request) {
-    return this.shiftService.findAll(request.user['client']);
+  findAll(@Paginate() query: PaginateQuery, @Req() request: Request) {
+    return this.shiftService.findAll(query, request.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))

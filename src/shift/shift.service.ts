@@ -4,6 +4,7 @@ import { UpdateShiftDto } from './dto/update-shift.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Shift } from './entities/shift.entity';
 import { Repository } from 'typeorm';
+import { PaginateConfig, paginate } from 'nestjs-paginate';
 
 @Injectable()
 export class ShiftService {
@@ -26,8 +27,25 @@ export class ShiftService {
     );
   }
 
-  findAll(client_id: string) {
-    return this.shiftRepository.find({ where: { client_id: client_id }, order: {id: 'ASC'} });
+  findAll(query, client_id: string) {
+    // return this.shiftRepository.find({ where: { client_id: client_id }, order: {id: 'ASC'} });
+    const queryBuilder = this.shiftRepository
+    .createQueryBuilder('shift')
+    .where('shift.client_id =:client_id', { client_id });
+  var filterableColumns = {};
+  if (query.filter?.['name']) {
+    const nameFilter = `%${query.filter['name']}%`;
+    queryBuilder.andWhere('shift.name ILIKE :name', { name: nameFilter });
+  }
+
+
+  const config: PaginateConfig<Shift> = {
+    sortableColumns: ['id'],
+    searchableColumns: ['name'],
+    filterableColumns,
+  };
+
+  return paginate<Shift>(query, queryBuilder, config);
   }
 
   async findAllWithoutFilterClient() {

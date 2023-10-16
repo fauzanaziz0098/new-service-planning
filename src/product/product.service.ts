@@ -50,7 +50,8 @@ export class ProductService {
       .where('product.client_id =:client_id', { client_id });
     var filterableColumns = {};
     if (query.filter?.['part_name']) {
-      filterableColumns['part_name'] = [FilterOperator.EQ];
+      const partNameFilter = `%${query.filter['part_name']}%`;
+      queryBuilder.andWhere('product.part_name ILIKE :part_name', { part_name: partNameFilter });
     }
 
     const config: PaginateConfig<Product> = {

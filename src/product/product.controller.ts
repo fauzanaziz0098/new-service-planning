@@ -24,8 +24,8 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @UseGuards(AuthGuard('jwt'))
-  // @UseGuards(PermissionsGuard)
-  // @SetMetadata('permissions', ['CREATE:PRODUCT'])
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['CREATE:PRODUCT'])
   @Post()
   create(
     @Body(new ValidationPipe()) createProductDto: CreateProductDto,
@@ -36,24 +36,24 @@ export class ProductController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  // @UseGuards(PermissionsGuard)
-  // @SetMetadata('permissions', ['VIEW:PRODUCT'])
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['READ:PRODUCT'])
   @Get()
   findAll(@Paginate() query: PaginateQuery, @Req() req: Request) {
     return this.productService.findAll(query, req.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
-  // @UseGuards(PermissionsGuard)
-  // @SetMetadata('permissions', ['SHOW:PRODUCT'])
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['SHOW:PRODUCT'])
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: Request) {
     return this.productService.findOne(+id, req.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
-  // @UseGuards(PermissionsGuard)
-  // @SetMetadata('permissions', ['UPDATE:PRODUCT'])
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['UPDATE:PRODUCT'])
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -68,16 +68,16 @@ export class ProductController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  // @UseGuards(PermissionsGuard)
-  // @SetMetadata('permissions', ['DELETE:PRODUCT'])
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['DELETE:PRODUCT'])
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: Request) {
     return this.productService.remove(+id, req.user['client']);
   }
 
   @UseGuards(AuthGuard('jwt'))
-  // @UseGuards(PermissionsGuard)
-  // @SetMetadata('permissions', ['DELETE:PRODUCT'])
+  @UseGuards(PermissionsGuard)
+  @SetMetadata('permissions', ['DELETE:PRODUCT'])
   @Post('delete/many')
   async removeMany(@Body('ids') ids: string[], @Req() req: Request) {
     return await this.productService.removeMany(ids, req.user['client']);
