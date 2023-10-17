@@ -23,6 +23,7 @@ import { ReportShiftService } from 'src/report-shift/report-shift.service';
 import axios from 'axios';
 import { ConditionMachineProductionService } from 'src/condition-machine-production/condition-machine-production.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { PaginateConfig, PaginateQuery, paginate } from 'nestjs-paginate';
 
 @Injectable()
 export class PlanningProductionService {
@@ -673,5 +674,25 @@ export class PlanningProductionService {
     });
   }
 
+  getAllData(query: PaginateQuery, clientId: any) {
+    const queryBuilder = this.planningProductionRepository
+      .createQueryBuilder('planningProduction')
+      .leftJoinAndSelect('planningProduction.machine', 'machine')
+      .leftJoinAndSelect('planningProduction.product', 'product')
+      .leftJoinAndSelect('planningProduction.shift', 'shift')
+      .where('planningProduction.client_id = :client_id', { client_id: clientId });
+    var filterableColumns = {};
+    if (query.filter?.['machine']) {
+      const nameFilter = `%${query.filter['machine']}%`;
+      queryBuilder.andWhere('machine.name ILIKE :machine', { machine: nameFilter });
+    }
+    const config: PaginateConfig<PlanningProduction> = {
+      sortableColumns: ['id'],
+      searchableColumns: ['machine'],
+      filterableColumns,
+    };
+
+    return paginate<PlanningProduction>(query, queryBuilder, config);
+  }
   
 }

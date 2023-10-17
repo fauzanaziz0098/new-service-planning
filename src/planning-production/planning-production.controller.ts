@@ -15,6 +15,7 @@ import { UpdatePlanningProductionDto } from './dto/update-planning-production.dt
 import { ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
+import { Paginate, PaginateQuery } from 'nestjs-paginate';
 
 @Controller('planning-production')
 export class PlanningProductionController {
@@ -68,5 +69,11 @@ export class PlanningProductionController {
   @Get("find-all-active")
   getAllActivePlan() {
     return this.planningProductionService.getPlanningActiveAll()
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get("get-all-data")
+  getAllData(@Paginate() query: PaginateQuery,@Req() req: Request) {
+    return this.planningProductionService.getAllData(query,req.user['client'])
   }
 }
