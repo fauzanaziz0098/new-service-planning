@@ -36,7 +36,7 @@ export class PlanningProduction {
   @JoinColumn({ name: 'shift_id' })
   shift: Shift;
 
-  @Column({ default: 0 })
+  @Column()
   qty_planning: number;
 
   @Column({ default: 0 })

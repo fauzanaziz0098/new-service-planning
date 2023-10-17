@@ -686,6 +686,25 @@ export class PlanningProductionService {
       const nameFilter = `%${query.filter['machine']}%`;
       queryBuilder.andWhere('machine.name ILIKE :machine', { machine: nameFilter });
     }
+    if (query.filter?.['status']) {
+      if (query.filter.status == 'idle') {
+        queryBuilder.andWhere('planningProduction.active_plan = false AND planningProduction.date_time_out IS NULL');
+      }
+      if (query.filter.status == 'run') {
+        queryBuilder.andWhere('planningProduction.active_plan = true');
+      }
+      if (query.filter.status == 'stop') {
+        queryBuilder.andWhere('planningProduction.active_plan = false AND planningProduction.date_time_out IS NOT NULL');
+      }
+    }
+    if (query.filter?.['qtyReject']) {
+      if (query.filter.qtyReject == '1') {
+        queryBuilder.andWhere('planningProduction.qty_reject != 0');
+      } 
+      if(query.filter.qtyReject == '0') {
+        queryBuilder.andWhere('planningProduction.qty_reject = 0');
+      }
+    }
     const config: PaginateConfig<PlanningProduction> = {
       sortableColumns: ['id'],
       searchableColumns: ['machine'],
@@ -694,5 +713,30 @@ export class PlanningProductionService {
 
     return paginate<PlanningProduction>(query, queryBuilder, config);
   }
+
+  async updateQtyReject(id: string, updatePlanningProductionDto: UpdatePlanningProductionDto) {
+    const plan = await this.planningProductionRepository.findOne({
+      where: {id: +id}
+    })
+
+    if (plan) {
+      if (plan.active_plan == false && plan.date_time_out) {
+        const planUpdate = await this.planningProductionRepository.update(id, updatePlanningProductionDto)
+        return planUpdate
+      }
+      throw new HttpException("Plan still running or not start yet", HttpStatus.BAD_REQUEST);
+    }
+    throw new HttpException("Plan Not Found", HttpStatus.BAD_REQUEST);
+  }
   
+  async findOne(id) {
+    const plan = await this.planningProductionRepository.findOne({
+      where: {id: +id}
+    })
+
+    if (plan) {
+      return plan
+    }
+    throw new HttpException("Plan Not Found", HttpStatus.BAD_REQUEST);
+  }
 }

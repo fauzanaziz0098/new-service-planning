@@ -76,4 +76,16 @@ export class PlanningProductionController {
   getAllData(@Paginate() query: PaginateQuery,@Req() req: Request) {
     return this.planningProductionService.getAllData(query,req.user['client'])
   }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(":id")
+  async updateQtyReject(@Param("id") id: string, @Body() updatePlanningProductionDto: UpdatePlanningProductionDto) {
+    return this.planningProductionService.updateQtyReject(id, updatePlanningProductionDto)
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get(":id")
+  async findOne(@Param("id") id: any) {
+    return this.planningProductionService.findOne(id)    
+  }
 }
