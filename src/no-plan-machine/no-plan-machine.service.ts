@@ -32,7 +32,7 @@ export class NoPlanMachineService {
 
     const activePlan = await this.planningProductionService.getPlanningProduction(createNoPlanMachineDto.client_id)
 
-    if (activePlan.shift.id == shift.id) {
+    if (activePlan?.shift?.id == shift.id) {
       throw new HttpException("Cannot create no plan if shift still used", HttpStatus.BAD_REQUEST);
     }
 
@@ -130,9 +130,7 @@ export class NoPlanMachineService {
       await this.planningProductionService.getPlanningProduction(
         updateNoPlanMachineDto.client_id,
       );
-    if (
-      activePlan.shift.id == noPlanMachine.shift.id &&
-      today == noPlanMachine.day
+    if (activePlan && (activePlan.shift.id == noPlanMachine.shift.id && today == noPlanMachine.day)
     ) {
       throw new HttpException(
         'No plan machine is using, cannot update',
@@ -184,7 +182,8 @@ export class NoPlanMachineService {
     });
     const activePlan = await this.planningProductionService.getPlanningProduction(clientId);
 
-    if (activePlan.shift.id == noPlanMachine.shift.id) {
+
+    if (activePlan && activePlan.shift.id == noPlanMachine.shift.id) {
       throw new HttpException("Cannot delete no plan when shift used", HttpStatus.BAD_REQUEST);
     }
 

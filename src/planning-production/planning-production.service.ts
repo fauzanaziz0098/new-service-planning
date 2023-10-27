@@ -152,14 +152,14 @@ export class PlanningProductionService {
   // }
 
   @Cron(CronExpression.EVERY_MINUTE)
-  private async resetTotal() {
+  private async resetSection() {
     const allActivePlan = await this.getPlanningActiveAll()
     const timeNow = moment().format("HH:mm")
     const messageShiftTrue = {
-      ResetTotal: [true]
+      ResetSection: [true]
     }
     const messageShiftFalse = {
-      ResetTotal: [false]
+      ResetSection: [false]
     }
     allActivePlan.map(item => {
       // Jika waktu sekarang sama dengan waktu shift dimulai
@@ -204,9 +204,11 @@ export class PlanningProductionService {
     })
   }
 
-  private async resetPlanStatus(machineId, variable) {
+  private async resetPlanStatus(machineId, variablePlan, variableReset) {
     let message = {
-      PlanStatus: [variable]
+      ResetTotal: [variableReset],
+      PlanStatus: [variablePlan],
+      Hour: [variableReset]
     }
     const sendVariable = JSON.stringify(message);
     this.client.publish(`MC${machineId}:DR:RPA`,sendVariable,{ qos: 2, retain: true },
@@ -284,13 +286,16 @@ export class PlanningProductionService {
       return 'Time Out Already Used By Other Plan';
     }
 
-    const totalTimePlanning = Math.round(
+    const totalTimePlanning = (
       (product.cycle_time * createPlanningProductionDto.qty_planning) / 60
     );
     // jika tidak ada plan yang aktif dan tidak ada dandory time, AKTIF
     if (!isActivePlan) {
       // reset plan status mqtt activePlan start plan
-      this.resetPlanStatus(createPlanningProductionDto.machine, false)
+      this.resetPlanStatus(createPlanningProductionDto.machine, false, true)
+      setTimeout(() => {
+        this.resetPlanStatus(createPlanningProductionDto.machine, false, false)
+      }, 2000);
       const planStart = moment().format("HH:mm")
       const planEnd = moment(planStart, 'HH:mm').add(totalTimePlanning, 'minutes').format("HH:mm")
       // console.log(planStart, 'start', planEnd, 'end');
@@ -454,7 +459,10 @@ export class PlanningProductionService {
         });
         setTimeout(async () => {
           // reset plan status mqtt nextPlan start plan
-          this.resetPlanStatus(nextPlan.machine.id, false)
+          this.resetPlanStatus(nextPlan.machine.id, false, true)
+          setTimeout(() => {
+            this.resetPlanStatus(nextPlan.machine.id, false, false)
+          }, 2000);
           const planStart = moment().format("HH:mm")
           const planEnd = moment(planStart, 'HH:mm').add(nextPlan.total_time_planning, 'minutes').format("HH:mm")
           const today = moment().format('dddd').toLocaleLowerCase();
@@ -504,7 +512,10 @@ export class PlanningProductionService {
         return `Plan has been Stopped, Activate Next Plan`;
       } else {
         // reset plan status mqtt nextPlan start plan
-        this.resetPlanStatus(nextPlan.machine.id, false)
+        this.resetPlanStatus(nextPlan.machine.id, false, true)
+        setTimeout(() => {
+          this.resetPlanStatus(nextPlan.machine.id, false, false)
+        }, 2000);
 
         // for save last production
         await axios.post(
@@ -552,7 +563,10 @@ export class PlanningProductionService {
       }
     }
     // reset plan status mqtt activePlan stop plan
-    this.resetPlanStatus(activePlan.machine.id, true)
+    this.resetPlanStatus(activePlan.machine.id, true, true)
+    setTimeout(() => {
+      this.resetPlanStatus(activePlan.machine.id, true, false)
+    }, 2000);
     // for save last production
     await axios.post(`${process.env.SERVICE_PRODUCTION}/production/stopped`, {
       clientId: activePlan.client_id,
@@ -569,7 +583,7 @@ export class PlanningProductionService {
 
     // for create report
     activePlan.date_time_out = activePlanDateTimeOut;
-    activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
+    // activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
     activePlan.qty_per_hour = Math.round(qty * 60);
     activePlan.total_time_actual = differenceTime;
     await this.planningProductionReportService.create(
@@ -588,7 +602,7 @@ export class PlanningProductionService {
     const activePlanProduction =
       await this.planningProductionRepository.findOne({
         where: { active_plan: true, client_id: client_id },
-        relations: ['shift', 'product', 'machine'],
+        relations: ['shift', 'shift.no_plan_machine_id', 'product', 'machine'],
       });
     if (activePlanProduction) {
       // jika dandory time plan active negative, berarti sedang menunggu dandory time dari plan berikutnya untuk aktif
@@ -599,7 +613,7 @@ export class PlanningProductionService {
       (activePlanProduction as any).message = null;
       return activePlanProduction;
     }
-    throw new HttpException('No Active Plan', HttpStatus.NOT_FOUND);
+    // throw new HttpException('No Active Plan', HttpStatus.NOT_FOUND);
   }
 
   async getLastPlanning(client_id: string) {
@@ -738,5 +752,14 @@ export class PlanningProductionService {
       return plan
     }
     throw new HttpException("Plan Not Found", HttpStatus.BAD_REQUEST);
+  }
+
+  async getAllPlanByClient(client) {
+    const plans = await this.planningProductionRepository.find({
+      where: {client_id: client},
+      relations: ['shift', 'shift.no_plan_machine_id', 'product', 'machine'],
+    })
+
+    return plans
   }
 }

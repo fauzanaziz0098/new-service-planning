@@ -57,7 +57,7 @@ export class PlanningProduction {
   @Column({ default: 0 })
   total_time_actual: number;
 
-  @Column({ default: 0 })
+  @Column('float',{ default: 0 })
   total_time_planning: number;
 
   @Column({ nullable: true })

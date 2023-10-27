@@ -67,6 +67,10 @@ export class ConditionMachineProductionService {
     const planningActive:any = (
       await this.planningProductionService.getPlanningActive(user.client)
     )
+      
+    if (planningActive.length == 0) {
+      throw new HttpException("No Active Plan Now", HttpStatus.BAD_REQUEST);
+    }
     
     const queryBuilder = this.conditionMachineProductionRepository
       .createQueryBuilder('conditionMachineProduction')

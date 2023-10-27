@@ -36,8 +36,8 @@ export class MachineController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @UseGuards(PermissionsGuard)
-  @SetMetadata('permissions', ['READ:MACHINE'])
+  // @UseGuards(PermissionsGuard)
+  // @SetMetadata('permissions', ['READ:MACHINE'])
   @Get()
   findAll(@Paginate() query: PaginateQuery, @Req() req: Request) {
     return this.machineService.findAll(query, req.user['client']);

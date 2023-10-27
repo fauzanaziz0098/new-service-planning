@@ -110,30 +110,30 @@ export class PlanningProductionReportService {
       production_qty_actual: Number(lastProduction.qty_actual),
     });
 
-    // const respons = (
-    //   await axios.post(
-    //     `${process.env.SERVICE_LOSS_TIME}/loss-time/line-stops`,
-    //     {
-    //       dateIn: createPlanningProductionReportDto.planning.date_time_in,
-    //       dateEnd: createPlanningProductionReportDto.planning.date_time_out,
-    //     },
-    //     {
-    //       headers: {
-    //         Authorization: token,
-    //       },
-    //     },
-    //   )
-    // ).data;
+    const respons = (
+      await axios.post(
+        `${process.env.SERVICE_LOSS_TIME}/loss-time/line-stops`,
+        {
+          dateIn: createPlanningProductionReportDto.planning.date_time_in,
+          dateEnd: createPlanningProductionReportDto.planning.date_time_out,
+        },
+        {
+          headers: {
+            Authorization: token,
+          },
+        },
+      )
+    ).data;
 
-    // const datas: VariableResponLineStopReport[] = respons.data;
-    // if (datas && datas.length > 0) {
-    //   datas.map((item) =>
-    //     this.productionReportLineStopService.create({
-    //       planningProductionReport: saveData,
-    //       timeTotal: moment.duration(item.sum, 'seconds').minutes(),
-    //       lineStopName: item.lineStop_name,
-    //     }),
-    //   );
-    // }
+    const datas: VariableResponLineStopReport[] = respons.data;
+    if (datas && datas.length > 0) {
+      datas.map((item) =>
+        this.productionReportLineStopService.create({
+          planningProductionReport: saveData,
+          timeTotal: moment.duration(item.sum, 'seconds').minutes(),
+          lineStopName: item.lineStop_name,
+        }),
+      );
+    }
   }
 }

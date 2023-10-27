@@ -88,4 +88,9 @@ export class PlanningProductionController {
   async findOne(@Param("id") id: any) {
     return this.planningProductionService.findOne(id)    
   }
+  
+  @Get('all-plan-client/:client')
+  async getAllPlanByClient(@Param('client') client) {
+    return this.planningProductionService.getAllPlanByClient(client)
+  }
 }

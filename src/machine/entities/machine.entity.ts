@@ -16,7 +16,7 @@ export class Machine {
   @Column()
   client_id: string;
 
-  @Column({ unique: true })
+  @Column()
   name: string;
 
   @Column()

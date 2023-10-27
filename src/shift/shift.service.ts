@@ -31,6 +31,7 @@ export class ShiftService {
     // return this.shiftRepository.find({ where: { client_id: client_id }, order: {id: 'ASC'} });
     const queryBuilder = this.shiftRepository
     .createQueryBuilder('shift')
+    .leftJoinAndSelect('shift.no_plan_machine_id', 'no_plan_machine_id')
     .where('shift.client_id =:client_id', { client_id });
   var filterableColumns = {};
   if (query.filter?.['name']) {
