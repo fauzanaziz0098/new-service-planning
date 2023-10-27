@@ -18,6 +18,7 @@ import { ProductionReportLineStopModule } from './production-report-line-stop/pr
 import { ReportShiftModule } from './report-shift/report-shift.module';
 import { ConditionMachineModule } from './condition-machine/condition-machine.module';
 import { ConditionMachineProductionModule } from './condition-machine-production/condition-machine-production.module';
+import { ReportOeeModule } from './report-oee/report-oee.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { ConditionMachineProductionModule } from './condition-machine-production
     ReportShiftModule,
     ConditionMachineModule,
     ConditionMachineProductionModule,
+    ReportOeeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
