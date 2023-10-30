@@ -23,7 +23,7 @@ import { ReportShiftService } from 'src/report-shift/report-shift.service';
 import axios from 'axios';
 import { ConditionMachineProductionService } from 'src/condition-machine-production/condition-machine-production.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PaginateConfig, PaginateQuery, paginate } from 'nestjs-paginate';
+import { FilterOperator, PaginateConfig, PaginateQuery, paginate } from 'nestjs-paginate';
 
 @Injectable()
 export class PlanningProductionService {
@@ -102,6 +102,7 @@ export class PlanningProductionService {
         message.OperatorId = [plan?.user];
         message.ShiftName = [plan?.shift?.name ? plan.shift.name : ''];
         message.clientId = [plan?.client_id];
+        message.PlanId = [plan?.id];
         const sendVariable = JSON.stringify(message);
         if (plan) {
           this.client.publish(
@@ -754,12 +755,18 @@ export class PlanningProductionService {
     throw new HttpException("Plan Not Found", HttpStatus.BAD_REQUEST);
   }
 
-  async getAllPlanByClient(client) {
-    const plans = await this.planningProductionRepository.find({
-      where: {client_id: client},
-      relations: ['shift', 'shift.no_plan_machine_id', 'product', 'machine'],
-    })
+  async getAllPlanByClient(query: PaginateQuery, client: string) {
+    const queryBuilder = this.planningProductionRepository
+      .createQueryBuilder('planningProduction')
+      .leftJoinAndSelect('planningProduction.shift', 'shift')
+      .leftJoinAndSelect('planningProduction.product', 'product')
+      .leftJoinAndSelect('planningProduction.machine', 'machine')
+      .leftJoinAndSelect('shift.no_plan_machine_id', 'no_plan_machine_id')
+      .where('planningProduction.client_id = :client_id', { client_id: client })
+      if (query.filter?.['dateTimeIn']) {
+        queryBuilder.andWhere('DATE(planningProduction.date_time_in)= :dateTimeIn', { dateTimeIn: query?.filter?.dateTimeIn })
+      }
 
-    return plans
+    return queryBuilder.getMany()
   }
 }

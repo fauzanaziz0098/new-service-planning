@@ -90,7 +90,7 @@ export class PlanningProductionController {
   }
   
   @Get('all-plan-client/:client')
-  async getAllPlanByClient(@Param('client') client) {
-    return this.planningProductionService.getAllPlanByClient(client)
+  async getAllPlanByClient(@Paginate() query: PaginateQuery, @Param('client') client) {
+    return this.planningProductionService.getAllPlanByClient(query, client)
   }
 }
