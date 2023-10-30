@@ -112,10 +112,11 @@ export class PlanningProductionReportService {
 
     const respons = (
       await axios.post(
-        `${process.env.SERVICE_LOSS_TIME}/loss-time/line-stops`,
+        `${process.env.SERVICE_LOSS_TIME}/report-line-stop/line-stops`,
         {
           dateIn: createPlanningProductionReportDto.planning.date_time_in,
           dateEnd: createPlanningProductionReportDto.planning.date_time_out,
+          planningId: createPlanningProductionReportDto.planning.id,
         },
         {
           headers: {
