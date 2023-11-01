@@ -464,6 +464,13 @@ export class PlanningProductionService {
           setTimeout(() => {
             this.resetPlanStatus(nextPlan.machine.id, false, false)
           }, 2000);
+
+          // reset plan status mqtt activePlan stop plan
+          this.resetPlanStatus(activePlan.machine.id, true, true)
+          setTimeout(() => {
+            this.resetPlanStatus(activePlan.machine.id, true, false)
+          }, 2000);
+
           const planStart = moment().format("HH:mm")
           const planEnd = moment(planStart, 'HH:mm').add(nextPlan.total_time_planning, 'minutes').format("HH:mm")
           const today = moment().format('dddd').toLocaleLowerCase();
@@ -516,6 +523,12 @@ export class PlanningProductionService {
         this.resetPlanStatus(nextPlan.machine.id, false, true)
         setTimeout(() => {
           this.resetPlanStatus(nextPlan.machine.id, false, false)
+        }, 2000);
+
+        // reset plan status mqtt activePlan stop plan
+        this.resetPlanStatus(activePlan.machine.id, true, true)
+        setTimeout(() => {
+          this.resetPlanStatus(activePlan.machine.id, true, false)
         }, 2000);
 
         // for save last production
@@ -587,10 +600,10 @@ export class PlanningProductionService {
     // activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
     activePlan.qty_per_hour = Math.round(qty * 60);
     activePlan.total_time_actual = differenceTime;
-    await this.planningProductionReportService.create(
-      { planning: activePlan },
-      token,
-    );
+    // await this.planningProductionReportService.create(
+    //   { planning: activePlan },
+    //   token,
+    // );
 
     // for Create report shift
     await this.reportShiftService.saveReportIfStop(activePlan);
@@ -768,5 +781,15 @@ export class PlanningProductionService {
       }
 
     return queryBuilder.getMany()
+  }
+  
+  async getQtyReject(clientId, dateTimeIn, dateTimeOut) {
+    return this.planningProductionRepository.findOne({
+      where: {
+        client_id: clientId,
+        date_time_in: dateTimeIn,
+        date_time_out: dateTimeOut,
+      }
+    })
   }
 }

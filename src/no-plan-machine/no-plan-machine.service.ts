@@ -13,9 +13,12 @@ import { Repository } from 'typeorm';
 import { ShiftService } from 'src/shift/shift.service';
 import * as moment from 'moment';
 import { PlanningProductionService } from 'src/planning-production/planning-production.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import * as mqtt from 'mqtt';
 
 @Injectable()
 export class NoPlanMachineService {
+  private client: mqtt.MqttClient;
   constructor(
     @InjectRepository(NoPlanMachine)
     private readonly noPlanMachineRepository: Repository<NoPlanMachine>,
@@ -23,7 +26,30 @@ export class NoPlanMachineService {
     private shiftService: ShiftService,
     @Inject(forwardRef(() => PlanningProductionService))
     private planningProductionService: PlanningProductionService,
-  ) {}
+  ) {
+    this.initializeMqttClient();
+  }
+
+  private async initializeMqttClient() {
+    const connectUrl = process.env.MQTT_CONNECTION;
+
+    this.client = mqtt.connect(connectUrl, {
+      clientId: `mqtt_nest_${Math.random().toString(16).slice(3)}`,
+      clean: true,
+      connectTimeout: 4000,
+      username: '',
+      password: '',
+      reconnectPeriod: 1000,
+    });
+
+    this.client.on('connect', () => {
+      console.log('MQTT client connected');
+    });
+    
+    this.client.on('error', (error) => {
+      console.log('Connection failed:', error);
+    });
+  }
 
   async create(createNoPlanMachineDto: CreateNoPlanMachineDto) {
     const shift = await this.shiftService.findOne(
@@ -227,5 +253,60 @@ export class NoPlanMachineService {
       .getMany();
 
     return noPlanMachine;
+  }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async sendNoPlan() {
+    const planActive = await this.planningProductionService.getPlanningActiveAll()
+    const noPlan = await this.noPlanMachineRepository.createQueryBuilder('noPlanMachine')
+    .where('noPlanMachine.day = :day', {day: moment().format('dddd').toLowerCase()})
+    .getMany()
+    
+    
+    planActive.map(item => {
+      const dateTimeIn = moment(item.date_time_in).format('HH:mm:ss')
+      const dateTimeOut = moment(item.date_time_in).add(item.total_time_planning, 'minute').format('HH:mm:ss')
+      noPlan.map(value => {
+        if (
+          moment(value.time_in, 'HH:mm:ss').isBetween(moment(dateTimeIn, 'HH:mm:ss'), moment(dateTimeOut, 'HH:mm:ss')) &&
+          moment(value.time_out, 'HH:mm:ss').isBetween(moment(dateTimeIn, 'HH:mm:ss'), moment(dateTimeOut, 'HH:mm:ss'))
+        ) {
+          if (moment(value.time_in, 'HH:mm:ss').isSame(moment(moment().format('HH:mm:ss'), 'HH:mm:ss'))) {
+            const message = {
+              NoPlan: [true]
+            }
+            const sendVariable = JSON.stringify(message)
+            this.client.publish(
+              `MC${item.machine.id}:NOPLAN:RPA`,
+              sendVariable,
+              { qos: 2, retain: true },
+              (error) => {
+                if (error) {
+                  console.error('Error publishing message:', error);
+                }
+              },
+            );
+            console.log('no plan start mqtt send');
+          }
+          if (moment(value.time_out, 'HH:mm:ss').isSame(moment(moment().format('HH:mm:ss'),'HH:mm:ss'))) {
+            const message = {
+              NoPlan: [false]
+            }
+            const sendVariable = JSON.stringify(message)
+            this.client.publish(
+              `MC${item.machine.id}:NOPLAN:RPA`,
+              sendVariable,
+              { qos: 2, retain: true },
+              (error) => {
+                if (error) {
+                  console.error('Error publishing message:', error);
+                }
+              },
+            );
+            console.log('no plan end mqtt send');
+          }
+        }
+      })
+    })
   }
 }
