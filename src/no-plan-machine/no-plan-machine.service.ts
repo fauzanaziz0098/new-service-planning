@@ -309,4 +309,13 @@ export class NoPlanMachineService {
       })
     })
   }
+
+  async findAllNoPlanToday(clientId) {
+    const noPlan = await this.noPlanMachineRepository.createQueryBuilder('noPlanMachine')
+    .where('noPlanMachine.client_id = :clientId', {clientId})
+    .andWhere('noPlanMachine.day = :day', {day: moment().format('dddd').toLowerCase()})
+    .getMany()
+
+    return noPlan
+  }
 }

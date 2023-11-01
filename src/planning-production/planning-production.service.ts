@@ -224,68 +224,21 @@ export class PlanningProductionService {
   async createPlanningProduction(
     createPlanningProductionDto: CreatePlanningProductionDto,
   ) {
-    const allPlanningProduction =
-      await this.planningProductionRepository.find();
     // cek aktif plan
-    const isActivePlan = await this.planningProductionRepository.findOne({
-      where: {
-        active_plan: true,
-        client_id: createPlanningProductionDto.client_id,
-      },
-      relations: ['shift'],
-    });
-    //cek shift
-    const shift = await this.shiftService.findOne(
-      +createPlanningProductionDto.shift,
-    );
-    // cek machine
-    const machine = await this.machineService.findOne(
-      +createPlanningProductionDto.machine,
-    );
+    const isActivePlan = await this.planningProductionRepository.createQueryBuilder('planningProduction')
+    .leftJoinAndSelect('planningProduction.shift', 'shift')
+    .leftJoinAndSelect('planningProduction.machine', 'machine')
+    .where('planningProduction.active_plan = :active', {active: true})
+    .andWhere('planningProduction.client_id = :client_id', {client_id: createPlanningProductionDto.client_id})
+    .andWhere('machine.id = :machine', {machine: createPlanningProductionDto.machine})
+    .getOne()
+    console.log(isActivePlan, createPlanningProductionDto.machine);
+    
     // cek product
     const product = await this.productService.findOne(
       +createPlanningProductionDto.product,
       createPlanningProductionDto.client_id,
     );
-
-    // convert shift jadi menit
-    const shiftStart = await this.convertTime(shift.time_start);
-    const shiftEnd = await this.convertTime(shift.time_end);
-
-    // convert time in ke menit
-    const timeIn = new Date(
-      createPlanningProductionDto.date_time_in,
-    ).toLocaleTimeString('it-IT');
-
-    // convert time out ke menit
-    const timeOut = new Date(
-      createPlanningProductionDto.date_time_out,
-    ).toLocaleTimeString('it-IT');
-
-    // validasi time
-    if (timeIn > timeOut) {
-      return 'Time In Greater Than Time Out';
-    }
-    const validateTimeIn = allPlanningProduction.map((plan) => {
-      const newPlanDateIn = new Date(
-        createPlanningProductionDto.date_time_in,
-      ).getTime();
-      const planDateIn = new Date(plan.date_time_in).getTime();
-      return newPlanDateIn >= planDateIn;
-    });
-    const validateTimeOut = allPlanningProduction.map((plan) => {
-      const newPlanDateOut = new Date(
-        createPlanningProductionDto.date_time_out,
-      ).getTime();
-      const planDateout = new Date(plan.date_time_out).getTime();
-      return newPlanDateOut >= planDateout;
-    });
-    if (validateTimeIn.includes(true)) {
-      return 'Time In Already Used By Other Plan';
-    }
-    if (validateTimeOut.includes(true)) {
-      return 'Time Out Already Used By Other Plan';
-    }
 
     const totalTimePlanning = (
       (product.cycle_time * createPlanningProductionDto.qty_planning) / 60
@@ -299,21 +252,14 @@ export class PlanningProductionService {
       }, 2000);
       const planStart = moment().format("HH:mm")
       const planEnd = moment(planStart, 'HH:mm').add(totalTimePlanning, 'minutes').format("HH:mm")
-      // console.log(planStart, 'start', planEnd, 'end');
       
-
-      const today = moment().format('dddd').toLocaleLowerCase();
-      const noPlanMachine = await this.noPlanMachineService.findOneByShift(
-        createPlanningProductionDto.shift,
-        today,
-      );
-  
+      const noPlanMachine = await this.noPlanMachineService.findAllNoPlanToday(createPlanningProductionDto.client_id)
       // cek no plan additional
       let totalNoPlanMachine = 0;
       noPlanMachine.map((res) => {
         const isWithinTimeRange =
-        moment(res.time_in, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) &&
-        moment(res.time_out, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm'));
+        moment(res.time_in, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) && moment(res.time_in, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm')) &&
+        moment(res.time_out, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) && moment(res.time_out, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm'));
       if (isWithinTimeRange) {
         totalNoPlanMachine += res.total;
       }
@@ -379,43 +325,52 @@ export class PlanningProductionService {
     }
   }
 
-  async stopPlanningProduction(client_id: string, token: string) {
+  async stopPlanningProduction(client_id: string, token, machineId) {
     // cek aktif plan
-    const activePlan = await this.planningProductionRepository.findOne({
-      where: { active_plan: true, client_id: client_id },
-      relations: ['product', 'machine', 'shift'],
-    });
+    const activePlan = await this.planningProductionRepository.createQueryBuilder('planningProduction')
+    .leftJoinAndSelect('planningProduction.shift', 'shift')
+    .leftJoinAndSelect('planningProduction.machine', 'machine')
+    .leftJoinAndSelect('planningProduction.product', 'product')
+    .where('planningProduction.active_plan = :active', {active: true})
+    .andWhere('planningProduction.client_id = :client_id', {client_id})
+    .andWhere('machine.id = :machine', {machine: machineId})
+    .getOne()
 
     if (!activePlan) {
       return 'No Active Plan';
     }
 
-    // const lineStopBeforeStop = await this.initializeMqttClientSpesifikMachine(
-    //   activePlan.id,
-    // );
-
     // cek plan berikutnya yang akan aktif
-    const nextPlan = await this.planningProductionRepository.findOne({
-      where: { id: MoreThan(activePlan.id), client_id },
-      order: { id: 'asc' },
-      relations: ['product', 'machine', 'shift'],
-    });
+    const nextPlan = await this.planningProductionRepository
+    .createQueryBuilder('planningProduction')
+    .leftJoinAndSelect('planningProduction.shift', 'shift')
+    .leftJoinAndSelect('planningProduction.machine', 'machine')
+    .leftJoinAndSelect('planningProduction.product', 'product')
+    .where('planningProduction.client_id = :client_id', { client_id: client_id })
+    .andWhere('machine.id = :machine', { machine: machineId })
+    .andWhere('planningProduction.id > :activePlanId', { activePlanId: activePlan.id })
+    .orderBy('planningProduction.id', 'ASC')  
+    .getOne()
 
-    const today = moment().format('dddd').toLocaleLowerCase();
-    const noPlanMachine = await this.noPlanMachineService.findOneByShift(
-      activePlan.shift.id,
-      today,
-    );
+    const noPlanMachine = await this.noPlanMachineService.findAllNoPlanToday(activePlan.client_id)
+    const totalTimePlanning = (activePlan.product.cycle_time * activePlan.qty_planning) / 60
+    const planStart = moment(activePlan.date_time_in).format("HH:mm")
+    const planEnd = moment(planStart, 'HH:mm').add(totalTimePlanning, 'minutes').format("HH:mm")
 
     // cek no plan additional
-    const noPlanMachineAdditional =
-      await this.noPlanMachineAdditionalService.findOne(activePlan.id);
+    const noPlanMachineAdditional = await this.noPlanMachineAdditionalService.findOne(activePlan.id);
     const noPlanMachineAdditionalTotal = noPlanMachineAdditional
       ? noPlanMachineAdditional.total
       : 0;
+    // cek no plan additional
     let totalNoPlanMachine = 0 + noPlanMachineAdditionalTotal;
     noPlanMachine.map((res) => {
-      totalNoPlanMachine += res.total;
+      const isWithinTimeRange =
+        moment(res.time_in, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) && moment(res.time_in, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm')) &&
+        moment(res.time_out, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) && moment(res.time_out, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm'));
+      if (isWithinTimeRange) {
+        totalNoPlanMachine += res.total;
+      }
     });
 
     // convert time in ke menit
@@ -427,19 +382,15 @@ export class PlanningProductionService {
     const activePlanDateTimeOut = moment().toDate();
     const timeOut = new Date(activePlanDateTimeOut).toLocaleTimeString('it-IT');
     // selisih waktu masuk dan keluar dalam menit
-    const differenceTime =
-      (await this.convertTime(timeOut)) - (await this.convertTime(timeIn));
+    // const differenceTime =
+    //   (await this.convertTime(timeOut)) - (await this.convertTime(timeIn));
+    const differenceTime = moment(timeOut, 'HH:mm:ss').diff(moment(timeIn, 'HH:mm:ss'), 'minute')
 
     // const qty = activePlan.qty_planning / (differenceTime - totalNoPlanMachine);
     const qty = activePlan.qty_planning / ((differenceTime - totalNoPlanMachine) == 0 ? 1 : (differenceTime - totalNoPlanMachine));
 
 
     if (nextPlan) {
-      const machine = await this.machineService.findOne(+nextPlan.machine.id);
-      const product = await this.productService.findOne(
-        +nextPlan.product.id,
-        nextPlan.client_id,
-      );
       if (nextPlan.dandory_time != 0) {
         // for save last production
         await axios.post(
@@ -447,6 +398,7 @@ export class PlanningProductionService {
           {
             clientId: activePlan.client_id,
             planning_production_id: activePlan.id,
+            machine: activePlan.machine.id
           },
         );
 
@@ -473,17 +425,13 @@ export class PlanningProductionService {
 
           const planStart = moment().format("HH:mm")
           const planEnd = moment(planStart, 'HH:mm').add(nextPlan.total_time_planning, 'minutes').format("HH:mm")
-          const today = moment().format('dddd').toLocaleLowerCase();
-          const noPlanMachine = await this.noPlanMachineService.findOneByShift(
-            nextPlan.shift.id,
-            today,
-          );
+          const noPlanMachine = await this.noPlanMachineService.findAllNoPlanToday(nextPlan.client_id)
         // cek no plan additional
         let totalNoPlanMachine = 0;
         noPlanMachine.map((res) => {
             const isWithinTimeRange =
-            moment(res.time_in, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) &&
-            moment(res.time_out, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm'));
+            moment(res.time_in, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) && moment(res.time_in, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm')) &&
+            moment(res.time_out, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) && moment(res.time_out, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm'));
           if (isWithinTimeRange) {
             totalNoPlanMachine += res.total;
           }
@@ -495,6 +443,7 @@ export class PlanningProductionService {
             {
               clientId: activePlan.client_id,
               planning_production_id: activePlan.id,
+              machine: activePlan.machine.id
             },
           );
 
@@ -537,6 +486,7 @@ export class PlanningProductionService {
           {
             clientId: activePlan.client_id,
             planning_production_id: activePlan.id,
+            machine: activePlan.machine.id
           },
         );
         await this.planningProductionRepository.update(activePlan.id, {
@@ -550,18 +500,12 @@ export class PlanningProductionService {
          // for save last production
          const planStart = moment().format("HH:mm")
          const planEnd = moment(planStart, 'HH:mm').add(nextPlan.total_time_planning, 'minutes').format("HH:mm")
-         const today = moment().format('dddd').toLocaleLowerCase();
-         const noPlanMachine = await this.noPlanMachineService.findOneByShift(
-           nextPlan.shift.id,
-           today,
-         );
+         const noPlanMachine = await this.noPlanMachineService.findAllNoPlanToday(nextPlan.client_id)
         // cek no plan additional
         let totalNoPlanMachine = 0;
         noPlanMachine.map((res) => {
             const isWithinTimeRange =
-            moment(res.time_in, 'HH:mm').isSameOrAfter(moment(planStart, 'HH:mm')) &&
-            moment(res.time_out, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm'));
-          if (isWithinTimeRange) {
+            moment(res.time_out, 'HH:mm').isSameOrBefore(moment(planEnd, 'HH:mm'));          if (isWithinTimeRange) {
             totalNoPlanMachine += res.total;
           }
         });
@@ -585,6 +529,7 @@ export class PlanningProductionService {
     await axios.post(`${process.env.SERVICE_PRODUCTION}/production/stopped`, {
       clientId: activePlan.client_id,
       planning_production_id: activePlan.id,
+      machine: activePlan.machine.id
     });
 
     await this.planningProductionRepository.update(activePlan.id, {
@@ -600,13 +545,13 @@ export class PlanningProductionService {
     // activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
     activePlan.qty_per_hour = Math.round(qty * 60);
     activePlan.total_time_actual = differenceTime;
-    // await this.planningProductionReportService.create(
-    //   { planning: activePlan },
-    //   token,
-    // );
+    await this.planningProductionReportService.create(
+      { planning: activePlan },
+      token,
+    );
 
     // for Create report shift
-    await this.reportShiftService.saveReportIfStop(activePlan);
+    // await this.reportShiftService.saveReportIfStop(activePlan);
 
     // return 'All Plan In Queue Has Been Finished';
     return 'No Plan In Queue, No Active Plan';
@@ -618,6 +563,33 @@ export class PlanningProductionService {
         where: { active_plan: true, client_id: client_id },
         relations: ['shift', 'shift.no_plan_machine_id', 'product', 'machine'],
       });
+    if (activePlanProduction) {
+      // jika dandory time plan active negative, berarti sedang menunggu dandory time dari plan berikutnya untuk aktif
+      if (activePlanProduction.dandory_time < 0) {
+        (activePlanProduction as any).message = 'Waiting Dandory Time';
+        return activePlanProduction;
+      }
+      (activePlanProduction as any).message = null;
+      return activePlanProduction;
+    }
+    // throw new HttpException('No Active Plan', HttpStatus.NOT_FOUND);
+  }
+
+  async getPlanningProductionByMachine(client_id: string, machine) {
+    let activePlanProduction
+      if (machine != 'null' && machine != 'undefined') {
+        activePlanProduction = await this.planningProductionRepository
+        .createQueryBuilder('planningProduction')
+        .leftJoinAndSelect('planningProduction.shift', 'shift')
+        .leftJoinAndSelect('planningProduction.machine', 'machine')
+        .leftJoinAndSelect('planningProduction.product', 'product')
+        .leftJoinAndSelect('shift.no_plan_machine_id', 'no_plan_machine_id')
+        .where('planningProduction.active_plan = :active', {active: true})
+        .andWhere('planningProduction.client_id = :client_id', {client_id})
+        .andWhere('machine.id = :machine', {machine})
+        .getOne()
+      }
+      
     if (activePlanProduction) {
       // jika dandory time plan active negative, berarti sedang menunggu dandory time dari plan berikutnya untuk aktif
       if (activePlanProduction.dandory_time < 0) {

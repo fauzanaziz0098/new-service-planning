@@ -44,17 +44,23 @@ export class PlanningProductionController {
     );
   }
 
+  // @Post('active-plan-api')
+  // getActiveAPI(@Body('client') client: string) {
+  //   return this.planningProductionService.getPlanningProduction(client);
+  // }
+
   @Post('active-plan-api')
-  getActiveAPI(@Body('client') client: string) {
-    return this.planningProductionService.getPlanningProduction(client);
+  getActiveAPI(@Body('client') client: string, @Body('machine') machine) {
+    return this.planningProductionService.getPlanningProductionByMachine(client, machine);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Post('stop-planning-production')
-  stopPlanning(@Req() req: Request) {
+  stopPlanning(@Req() req: Request, @Body('machine') machineId) {
     return this.planningProductionService.stopPlanningProduction(
       req.user['client'],
       req.headers.authorization,
+      machineId
     );
   }
 

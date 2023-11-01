@@ -34,13 +34,13 @@ export class PlanningProductionReport {
   // @Column()
   // shift: string;
 
-  @Column()
+  @Column('numeric', {nullable: true})
   product_cycle_time: number;
 
   @Column()
   machine_name: string;
 
-  @Column()
+  @Column('numeric', {nullable: true})
   qty_planning: number;
 
   @Column({ type: 'timestamp without time zone', nullable: true })
@@ -49,7 +49,7 @@ export class PlanningProductionReport {
   @Column({ type: 'timestamp without time zone', nullable: true })
   planning_date_time_out: Date;
 
-  @Column({ nullable: true })
+  @Column('numeric', { nullable: true })
   planning_total: number;
 
   @OneToMany(
@@ -59,7 +59,7 @@ export class PlanningProductionReport {
   )
   productionReportLineStop: ProductionReportLineStop[];
 
-  @Column({ nullable: true })
+  @Column('numeric', { nullable: true })
   production_qty_actual: number;
 
   @CreateDateColumn()
