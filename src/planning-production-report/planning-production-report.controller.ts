@@ -39,4 +39,10 @@ export class PlanningProductionReportController {
   reportOeeMonthly(@Req() req: Request) {
     return this.planningProductionReportService.monthly(req.user['client']);
   }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('get-data-report')
+  async getDataReport(@Req() req: Request) {
+    return this.planningProductionReportService.getDataReport(req.user['client'])
+  }
 }

@@ -47,6 +47,18 @@ export class ReportShift {
   @Column()
   client_id: string;
 
+  @Column('numeric', {nullable: true})
+  availability: number
+
+  @Column('numeric', {nullable: true})
+  performance: number
+
+  @Column('numeric', {nullable: true})
+  quality: number
+
+  @Column('numeric', {nullable: true})
+  oee: number
+
   @CreateDateColumn()
   created_at: Date;
 

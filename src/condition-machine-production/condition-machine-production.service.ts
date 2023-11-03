@@ -62,27 +62,22 @@ export class ConditionMachineProductionService {
     return await this.conditionMachineProductionRepository.update(id, body);
   }
 
-  async findAll(query: PaginateQuery, user: VariableUserLogin) {
+  async findAll(query: PaginateQuery, user: VariableUserLogin, machineId) {
 
     const planningActive:any = (
-      await this.planningProductionService.getPlanningActive(user.client)
+      await this.planningProductionService.getPlanningProductionByMachine(user.client, machineId)
     )
-      
-    if (planningActive.length == 0) {
+    
+    if (!planningActive) {
       throw new HttpException("No Active Plan Now", HttpStatus.BAD_REQUEST);
     }
-    
+
     const queryBuilder = this.conditionMachineProductionRepository
       .createQueryBuilder('conditionMachineProduction')
       .leftJoinAndSelect('conditionMachineProduction.conditionMachine', 'conditionMachine')
       .where('conditionMachineProduction.clientId = :client', { client: user.client })
-      .andWhere('conditionMachineProduction.planningId = :planningId', { planningId: planningActive[0].id})
+      .andWhere('conditionMachineProduction.planningId = :planningId', { planningId: planningActive.id})
 
-    const config: PaginateConfig<ConditionMachineProduction> = {
-      sortableColumns: ['id'],
-      searchableColumns: ['clientId'],
-    };
-
-    return paginate<ConditionMachineProduction>(query, queryBuilder, config);
+    return queryBuilder.getMany()
   }
 }

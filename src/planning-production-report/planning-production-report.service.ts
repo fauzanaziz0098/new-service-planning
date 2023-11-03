@@ -16,6 +16,7 @@ import { VariableResponLineStopReport } from 'src/interface/variable-respon-line
 import * as moment from 'moment';
 import { ShiftService } from 'src/shift/shift.service';
 import { PlanningProductionService } from '../planning-production/planning-production.service';
+import { NoPlanMachineService } from 'src/no-plan-machine/no-plan-machine.service';
 
 @Injectable()
 export class PlanningProductionReportService {
@@ -28,6 +29,8 @@ export class PlanningProductionReportService {
     private readonly shiftService: ShiftService,
     @Inject(forwardRef(() => PlanningProductionService))
     private readonly planningProductionService: PlanningProductionService,
+    @Inject(forwardRef(() => NoPlanMachineService))
+    private readonly noPlanMachineService: NoPlanMachineService,
   ) {}
 
   getReport(query: PaginateQuery) {
@@ -167,6 +170,9 @@ export class PlanningProductionReportService {
           let actualProduction = timeInMinute - lineStopOther;
           let roundPercentage = Math.round((actualProduction / plannedProduction) * 100);
           let round = (actualProduction / plannedProduction);
+          if (isNaN(round) || isNaN(roundPercentage)) {
+            round = 0
+          }
           let availability = {plannedProduction, actualProduction, roundPercentage, round}
           
           let totalPlanQuantityProduction = qtyPlanning;
@@ -176,6 +182,8 @@ export class PlanningProductionReportService {
           let performance = Math.round(totalProduction / upTime);
           roundPercentage = Math.round((actualQuantityProduction / totalPlanQuantityProduction) * 100)
           round = (actualQuantityProduction / totalPlanQuantityProduction)
+
+          let performancePercentage = Math.round((productionReport.product_cycle_time * productionReport.production_qty_actual / 60) / timeInMinute * 100)
           let performances = {
             totalPlanQuantityProduction,
             actualQuantityProduction,
@@ -183,7 +191,8 @@ export class PlanningProductionReportService {
             upTime,
             performance,
             roundPercentage,
-            round
+            round,
+            performancePercentage
           }
           
           totalProduction = qtyActual;
@@ -195,11 +204,13 @@ export class PlanningProductionReportService {
             round = 0;
           }
   
+          let qualityPercentage = Math.round(productionReport.production_qty_actual / (productionReport.production_qty_actual - 0) * 100)
           let quality = {
             totalProduction,
             totalProductOk,
             roundPercentage,
-            round
+            round,
+            qualityPercentage
           }
 
           let oee = Math.round((availability['round'] * performances['round'] * quality['round']) * 100)
@@ -219,28 +230,31 @@ export class PlanningProductionReportService {
           performances: 0.0,
           roundPercentage: 0.0,
           round: 0,
+          performancePercentage: 0
         },
-        quality: { totalProduction: 0, totalProductOk: 0, roundPercentage: 0, round: 0 },
+        quality: { totalProduction: 0, totalProductOk: 0, roundPercentage: 0, round: 0, qualityPercentage: 0 },
         oee: 0.0,
       };
       
       const reduceMap = planningMapping.reduce((total, prefix) => {
-        total.availability.plannedProduction += prefix.availability.plannedProduction;
-        total.availability.actualProduction += prefix.availability.actualProduction;
-        total.availability.roundPercentage += prefix.availability.roundPercentage;
-        total.availability.round += prefix.availability.round;
-        total.performances.totalPlanQuantityProduction += prefix.performances.totalPlanQuantityProduction;
-        total.performances.actualQuantityProduction += prefix.performances.actualQuantityProduction;
-        total.performances.totalProduction += prefix.performances.totalProduction;
-        total.performances.upTime += prefix.performances.upTime;
-        total.performances.performances += prefix.performances.performance;
-        total.performances.roundPercentage += prefix.performances.roundPercentage;
-        total.performances.round += prefix.performances.round;
-        total.quality.totalProduction += prefix.quality.totalProduction;
-        total.quality.totalProductOk += prefix.quality.totalProductOk;
-        total.quality.roundPercentage += prefix.quality.roundPercentage;
-        total.quality.round += prefix.quality.round;
-        total.oee += prefix.oee;
+        total.availability.plannedProduction += Number(prefix.availability.plannedProduction);
+        total.availability.actualProduction += Number(prefix.availability.actualProduction);
+        total.availability.roundPercentage += Number(prefix.availability.roundPercentage);
+        total.availability.round += Number(prefix.availability.round);
+        total.performances.totalPlanQuantityProduction += Number(prefix.performances.totalPlanQuantityProduction);
+        total.performances.actualQuantityProduction += Number(prefix.performances.actualQuantityProduction);
+        total.performances.totalProduction += Number(prefix.performances.totalProduction);
+        total.performances.upTime += Number(prefix.performances.upTime);
+        total.performances.performances += Number(prefix.performances.performance);
+        total.performances.roundPercentage += Number(prefix.performances.roundPercentage);
+        total.performances.round += Number(prefix.performances.round);
+        total.performances.performancePercentage += Number(prefix.performances.performancePercentage);
+        total.quality.totalProduction += Number(prefix.quality.totalProduction);
+        total.quality.totalProductOk += Number(prefix.quality.totalProductOk);
+        total.quality.roundPercentage += Number(prefix.quality.roundPercentage);
+        total.quality.round += Number(prefix.quality.round);
+        total.quality.qualityPercentage += Number(prefix.quality.qualityPercentage);
+        total.oee += Number(prefix.oee);
         return total;
       }, initialValue);
       
@@ -252,8 +266,8 @@ export class PlanningProductionReportService {
       round_ava = reduceMap['availability']['actualProduction'] / reduceMap['availability']['plannedProduction'];
       round_per = reduceMap['performances']['actualQuantityProduction'] / reduceMap['performances']['totalPlanQuantityProduction'];
       if (isNaN(round_ava) || isNaN(round_per)) {
-        round_ava = reduceMap['availability']['actualProduction'] / reduceMap['availability']['plannedProduction'];
-        round_per = reduceMap['performances']['actualQuantityProduction'] / reduceMap['performances']['totalPlanQuantityProduction'];
+        round_ava = 0;
+        round_per = 0;
       }
 
       round_qua = reduceMap['quality']['totalProductOk'] / reduceMap['quality']['totalProduction'];
@@ -265,7 +279,11 @@ export class PlanningProductionReportService {
       if (isNaN(oee)) {
         oee = 0;
       }
-      return oee
+      const availabilityPercentage = reduceMap['availability']['roundPercentage']
+      const performancePercentage = reduceMap['performances']['performancePercentage']
+      const qualityPercentage = reduceMap['quality']['qualityPercentage']
+      
+      return {oee, availabilityPercentage, performancePercentage, qualityPercentage}
     }))
     
     return {
@@ -273,7 +291,7 @@ export class PlanningProductionReportService {
       end: moment().endOf('month').format('YYYY-MM-DD'),
       data: data,
       month: {
-        label: `${moment().startOf('month').format('DD MMM')} - ${moment().subtract(1, 'month').endOf('month').format('DD MMM')}`,
+        label: `${moment().startOf('year').format('DD MMM')} - ${moment().subtract(1, 'month').endOf('month').format('DD MMM')}`,
         value: await this.monthAgo(client_id)
       },
       one: {
@@ -289,7 +307,7 @@ export class PlanningProductionReportService {
 
   async monthAgo(client_id) {
     const startDateMonthAgo = moment().startOf('year').format('YYYY-MM-DD HH:mm:ss');
-    const endDateMonthAgo = moment().subtract(1, 'month').endOf('year').format('YYYY-MM-DD HH:mm:ss');
+    const endDateMonthAgo = moment().subtract(1, 'month').endOf('month').format('YYYY-MM-DD HH:mm:ss');
 
     const planMap = await this.planningProductionReportRepository.createQueryBuilder('planningProductionReport')
     .leftJoinAndSelect('planningProductionReport.productionReportLineStop', 'productionReportLineStop')
@@ -369,22 +387,22 @@ export class PlanningProductionReportService {
       };
       
       const reduceMap = planningMapping.reduce((total, prefix) => {
-        total.availability.plannedProduction += prefix.availability.plannedProduction;
-        total.availability.actualProduction += prefix.availability.actualProduction;
-        total.availability.roundPercentage += prefix.availability.roundPercentage;
-        total.availability.round += prefix.availability.round;
-        total.performances.totalPlanQuantityProduction += prefix.performances.totalPlanQuantityProduction;
-        total.performances.actualQuantityProduction += prefix.performances.actualQuantityProduction;
-        total.performances.totalProduction += prefix.performances.totalProduction;
-        total.performances.upTime += prefix.performances.upTime;
-        total.performances.performances += prefix.performances.performance;
-        total.performances.roundPercentage += prefix.performances.roundPercentage;
-        total.performances.round += prefix.performances.round;
-        total.quality.totalProduction += prefix.quality.totalProduction;
-        total.quality.totalProductOk += prefix.quality.totalProductOk;
-        total.quality.roundPercentage += prefix.quality.roundPercentage;
-        total.quality.round += prefix.quality.round;
-        total.oee += prefix.oee;
+        total.availability.plannedProduction += Number(prefix.availability.plannedProduction);
+        total.availability.actualProduction += Number(prefix.availability.actualProduction);
+        total.availability.roundPercentage += Number(prefix.availability.roundPercentage);
+        total.availability.round += Number(prefix.availability.round);
+        total.performances.totalPlanQuantityProduction += Number(prefix.performances.totalPlanQuantityProduction);
+        total.performances.actualQuantityProduction += Number(prefix.performances.actualQuantityProduction);
+        total.performances.totalProduction += Number(prefix.performances.totalProduction);
+        total.performances.upTime += Number(prefix.performances.upTime);
+        total.performances.performances += Number(prefix.performances.performance);
+        total.performances.roundPercentage += Number(prefix.performances.roundPercentage);
+        total.performances.round += Number(prefix.performances.round);
+        total.quality.totalProduction += Number(prefix.quality.totalProduction);
+        total.quality.totalProductOk += Number(prefix.quality.totalProductOk);
+        total.quality.roundPercentage += Number(prefix.quality.roundPercentage);
+        total.quality.round += Number(prefix.quality.round);
+        total.oee += Number(prefix.oee);
         return total;
       }, initialValue);
       
@@ -495,22 +513,22 @@ export class PlanningProductionReportService {
       };
       
       const reduceMap = planningMapping.reduce((total, prefix) => {
-        total.availability.plannedProduction += prefix.availability.plannedProduction;
-        total.availability.actualProduction += prefix.availability.actualProduction;
-        total.availability.roundPercentage += prefix.availability.roundPercentage;
-        total.availability.round += prefix.availability.round;
-        total.performances.totalPlanQuantityProduction += prefix.performances.totalPlanQuantityProduction;
-        total.performances.actualQuantityProduction += prefix.performances.actualQuantityProduction;
-        total.performances.totalProduction += prefix.performances.totalProduction;
-        total.performances.upTime += prefix.performances.upTime;
-        total.performances.performances += prefix.performances.performance;
-        total.performances.roundPercentage += prefix.performances.roundPercentage;
-        total.performances.round += prefix.performances.round;
-        total.quality.totalProduction += prefix.quality.totalProduction;
-        total.quality.totalProductOk += prefix.quality.totalProductOk;
-        total.quality.roundPercentage += prefix.quality.roundPercentage;
-        total.quality.round += prefix.quality.round;
-        total.oee += prefix.oee;
+        total.availability.plannedProduction += Number(prefix.availability.plannedProduction);
+        total.availability.actualProduction += Number(prefix.availability.actualProduction);
+        total.availability.roundPercentage += Number(prefix.availability.roundPercentage);
+        total.availability.round += Number(prefix.availability.round);
+        total.performances.totalPlanQuantityProduction += Number(prefix.performances.totalPlanQuantityProduction);
+        total.performances.actualQuantityProduction += Number(prefix.performances.actualQuantityProduction);
+        total.performances.totalProduction += Number(prefix.performances.totalProduction);
+        total.performances.upTime += Number(prefix.performances.upTime);
+        total.performances.performances += Number(prefix.performances.performance);
+        total.performances.roundPercentage += Number(prefix.performances.roundPercentage);
+        total.performances.round += Number(prefix.performances.round);
+        total.quality.totalProduction += Number(prefix.quality.totalProduction);
+        total.quality.totalProductOk += Number(prefix.quality.totalProductOk);
+        total.quality.roundPercentage += Number(prefix.quality.roundPercentage);
+        total.quality.round += Number(prefix.quality.round);
+        total.oee += Number(prefix.oee);
         return total;
       }, initialValue);
       
@@ -620,22 +638,22 @@ export class PlanningProductionReportService {
       };
       
       const reduceMap = planningMapping.reduce((total, prefix) => {
-        total.availability.plannedProduction += prefix.availability.plannedProduction;
-        total.availability.actualProduction += prefix.availability.actualProduction;
-        total.availability.roundPercentage += prefix.availability.roundPercentage;
-        total.availability.round += prefix.availability.round;
-        total.performances.totalPlanQuantityProduction += prefix.performances.totalPlanQuantityProduction;
-        total.performances.actualQuantityProduction += prefix.performances.actualQuantityProduction;
-        total.performances.totalProduction += prefix.performances.totalProduction;
-        total.performances.upTime += prefix.performances.upTime;
-        total.performances.performances += prefix.performances.performance;
-        total.performances.roundPercentage += prefix.performances.roundPercentage;
-        total.performances.round += prefix.performances.round;
-        total.quality.totalProduction += prefix.quality.totalProduction;
-        total.quality.totalProductOk += prefix.quality.totalProductOk;
-        total.quality.roundPercentage += prefix.quality.roundPercentage;
-        total.quality.round += prefix.quality.round;
-        total.oee += prefix.oee;
+        total.availability.plannedProduction += Number(prefix.availability.plannedProduction);
+        total.availability.actualProduction += Number(prefix.availability.actualProduction);
+        total.availability.roundPercentage += Number(prefix.availability.roundPercentage);
+        total.availability.round += Number(prefix.availability.round);
+        total.performances.totalPlanQuantityProduction += Number(prefix.performances.totalPlanQuantityProduction);
+        total.performances.actualQuantityProduction += Number(prefix.performances.actualQuantityProduction);
+        total.performances.totalProduction += Number(prefix.performances.totalProduction);
+        total.performances.upTime += Number(prefix.performances.upTime);
+        total.performances.performances += Number(prefix.performances.performance);
+        total.performances.roundPercentage += Number(prefix.performances.roundPercentage);
+        total.performances.round += Number(prefix.performances.round);
+        total.quality.totalProduction += Number(prefix.quality.totalProduction);
+        total.quality.totalProductOk += Number(prefix.quality.totalProductOk);
+        total.quality.roundPercentage += Number(prefix.quality.roundPercentage);
+        total.quality.round += Number(prefix.quality.round);
+        total.oee += Number(prefix.oee);
         return total;
       }, initialValue);
       
@@ -695,7 +713,10 @@ export class PlanningProductionReportService {
           let roundPercentage = Math.round((actualProduction / plannedProduction) * 100);
           let round = (actualProduction / plannedProduction);
           let availability = {plannedProduction, actualProduction, roundPercentage, round}
-          
+          if (isNaN(round) || isNaN(roundPercentage)) {
+            round = 0
+          }
+
           let totalPlanQuantityProduction = qtyPlanning;
           let actualQuantityProduction = qtyActual;
           let totalProduction = qtyActual;
@@ -703,6 +724,7 @@ export class PlanningProductionReportService {
           let performance = Math.round(totalProduction / upTime);
           roundPercentage = Math.round((actualQuantityProduction / totalPlanQuantityProduction) * 100)
           round = (actualQuantityProduction / totalPlanQuantityProduction)
+          let performancePercentage = Math.round((productionReport.product_cycle_time * productionReport.production_qty_actual / 60) / timeInMinute * 100)
           let performances = {
             totalPlanQuantityProduction,
             actualQuantityProduction,
@@ -710,7 +732,8 @@ export class PlanningProductionReportService {
             upTime,
             performance,
             roundPercentage,
-            round
+            round,
+            performancePercentage
           }
           
           totalProduction = qtyActual;
@@ -722,11 +745,13 @@ export class PlanningProductionReportService {
             round = 0;
           }
   
+          let qualityPercentage = Math.round(productionReport.production_qty_actual / (productionReport.production_qty_actual - 0) * 100)
           let quality = {
             totalProduction,
             totalProductOk,
             roundPercentage,
-            round
+            round,
+            qualityPercentage
           }
 
           let oee = Math.round((availability['round'] * performances['round'] * quality['round']) * 100)
@@ -746,28 +771,31 @@ export class PlanningProductionReportService {
           performances: 0.0,
           roundPercentage: 0.0,
           round: 0,
+          performancePercentage: 0
         },
-        quality: { totalProduction: 0, totalProductOk: 0, roundPercentage: 0, round: 0 },
+        quality: { totalProduction: 0, totalProductOk: 0, roundPercentage: 0, round: 0, qualityPercentage: 0 },
         oee: 0.0,
       };
       
       const reduceMap = planningMapping.reduce((total, prefix) => {
-        total.availability.plannedProduction += prefix.availability.plannedProduction;
-        total.availability.actualProduction += prefix.availability.actualProduction;
-        total.availability.roundPercentage += prefix.availability.roundPercentage;
-        total.availability.round += prefix.availability.round;
-        total.performances.totalPlanQuantityProduction += prefix.performances.totalPlanQuantityProduction;
-        total.performances.actualQuantityProduction += prefix.performances.actualQuantityProduction;
-        total.performances.totalProduction += prefix.performances.totalProduction;
-        total.performances.upTime += prefix.performances.upTime;
-        total.performances.performances += prefix.performances.performance;
-        total.performances.roundPercentage += prefix.performances.roundPercentage;
-        total.performances.round += prefix.performances.round;
-        total.quality.totalProduction += prefix.quality.totalProduction;
-        total.quality.totalProductOk += prefix.quality.totalProductOk;
-        total.quality.roundPercentage += prefix.quality.roundPercentage;
-        total.quality.round += prefix.quality.round;
-        total.oee += prefix.oee;
+        total.availability.plannedProduction += Number(prefix.availability.plannedProduction);
+        total.availability.actualProduction += Number(prefix.availability.actualProduction);
+        total.availability.roundPercentage += Number(prefix.availability.roundPercentage);
+        total.availability.round += Number(prefix.availability.round);
+        total.performances.totalPlanQuantityProduction += Number(prefix.performances.totalPlanQuantityProduction);
+        total.performances.actualQuantityProduction += Number(prefix.performances.actualQuantityProduction);
+        total.performances.totalProduction += Number(prefix.performances.totalProduction);
+        total.performances.upTime += Number(prefix.performances.upTime);
+        total.performances.performances += Number(prefix.performances.performance);
+        total.performances.roundPercentage += Number(prefix.performances.roundPercentage);
+        total.performances.round += Number(prefix.performances.round);
+        total.performances.performancePercentage += Number(prefix.performances.performancePercentage);
+        total.quality.totalProduction += Number(prefix.quality.totalProduction);
+        total.quality.totalProductOk += Number(prefix.quality.totalProductOk);
+        total.quality.roundPercentage += Number(prefix.quality.roundPercentage);
+        total.quality.round += Number(prefix.quality.round);
+        total.quality.qualityPercentage += Number(prefix.quality.qualityPercentage);
+        total.oee += Number(prefix.oee)
         return total;
       }, initialValue);
       
@@ -792,9 +820,14 @@ export class PlanningProductionReportService {
       if (isNaN(oee)) {
         oee = 0;
       }
+
+      const availabilityPercentage = reduceMap['availability']['roundPercentage']
+      const performancePercentage = reduceMap['performances']['performancePercentage']
+      const qualityPercentage = reduceMap['quality']['qualityPercentage']
+
       return {
         label: moment(date).add(value, 'month').format('MMM-YY'),
-        value: oee,
+        value: {oee, availabilityPercentage, performancePercentage, qualityPercentage},
         color: 'orange'
       }
     }))
@@ -831,7 +864,9 @@ export class PlanningProductionReportService {
         let roundPercentage = Math.round((actualProduction / plannedProduction) * 100);
         let round = (actualProduction / plannedProduction);
         let availability = {plannedProduction, actualProduction, roundPercentage, round}
-        
+        if (isNaN(round) || isNaN(roundPercentage)) {
+          round = 0
+        }
         let totalPlanQuantityProduction = qtyPlanning;
         let actualQuantityProduction = qtyActual;
         let totalProduction = qtyActual;
@@ -839,6 +874,7 @@ export class PlanningProductionReportService {
         let performance = Math.round(totalProduction / upTime);
         roundPercentage = Math.round((actualQuantityProduction / totalPlanQuantityProduction) * 100)
         round = (actualQuantityProduction / totalPlanQuantityProduction)
+        let performancePercentage = Math.round((productionReport.product_cycle_time * productionReport.production_qty_actual / 60) / timeInMinute * 100)
         let performances = {
           totalPlanQuantityProduction,
           actualQuantityProduction,
@@ -846,7 +882,8 @@ export class PlanningProductionReportService {
           upTime,
           performance,
           roundPercentage,
-          round
+          round,
+          performancePercentage
         }
         
         totalProduction = qtyActual;
@@ -857,12 +894,14 @@ export class PlanningProductionReportService {
           roundPercentage = 0;
           round = 0;
         }
-
+        
+        let qualityPercentage = Math.round(productionReport.production_qty_actual / (productionReport.production_qty_actual - 0) * 100)
         let quality = {
           totalProduction,
           totalProductOk,
           roundPercentage,
-          round
+          round,
+          qualityPercentage
         }
 
         let oee = Math.round((availability['round'] * performances['round'] * quality['round']) * 100)
@@ -881,28 +920,31 @@ export class PlanningProductionReportService {
           performances: 0.0,
           roundPercentage: 0.0,
           round: 0,
+          performancePercentage: 0
         },
-        quality: { totalProduction: 0, totalProductOk: 0, roundPercentage: 0, round: 0 },
+        quality: { totalProduction: 0, totalProductOk: 0, roundPercentage: 0, round: 0, qualityPercentage: 0 },
         oee: 0.0,
       };
       
       const reduceMap = planningMapping.reduce((total, prefix) => {
-        total.availability.plannedProduction += prefix.availability.plannedProduction;
-        total.availability.actualProduction += prefix.availability.actualProduction;
-        total.availability.roundPercentage += prefix.availability.roundPercentage;
-        total.availability.round += prefix.availability.round;
-        total.performances.totalPlanQuantityProduction += prefix.performances.totalPlanQuantityProduction;
-        total.performances.actualQuantityProduction += prefix.performances.actualQuantityProduction;
-        total.performances.totalProduction += prefix.performances.totalProduction;
-        total.performances.upTime += prefix.performances.upTime;
-        total.performances.performances += prefix.performances.performance;
-        total.performances.roundPercentage += prefix.performances.roundPercentage;
-        total.performances.round += prefix.performances.round;
-        total.quality.totalProduction += prefix.quality.totalProduction;
-        total.quality.totalProductOk += prefix.quality.totalProductOk;
-        total.quality.roundPercentage += prefix.quality.roundPercentage;
-        total.quality.round += prefix.quality.round;
-        total.oee += prefix.oee;
+        total.availability.plannedProduction += Number(prefix.availability.plannedProduction);
+        total.availability.actualProduction += Number(prefix.availability.actualProduction);
+        total.availability.roundPercentage += Number(prefix.availability.roundPercentage);
+        total.availability.round += Number(prefix.availability.round);
+        total.performances.totalPlanQuantityProduction += Number(prefix.performances.totalPlanQuantityProduction);
+        total.performances.actualQuantityProduction += Number(prefix.performances.actualQuantityProduction);
+        total.performances.totalProduction += Number(prefix.performances.totalProduction);
+        total.performances.upTime += Number(prefix.performances.upTime);
+        total.performances.performances += Number(prefix.performances.performance);
+        total.performances.roundPercentage += Number(prefix.performances.roundPercentage);
+        total.performances.round += Number(prefix.performances.round);
+        total.quality.totalProduction += Number(prefix.quality.totalProduction);        
+        total.performances.performancePercentage += Number(prefix.performances.performancePercentage);
+        total.quality.totalProductOk += Number(prefix.quality.totalProductOk);
+        total.quality.roundPercentage += Number(prefix.quality.roundPercentage);
+        total.quality.round += Number(prefix.quality.round);
+        total.quality.qualityPercentage += Number(prefix.quality.qualityPercentage);
+        total.oee += Number(prefix.oee);
         return total;
       }, initialValue);
     
@@ -927,9 +969,14 @@ export class PlanningProductionReportService {
       if (isNaN(oee)) {
         oee = 0;
       }
+
+      const availabilityPercentage = reduceMap['availability']['roundPercentage']
+      const performancePercentage = reduceMap['performances']['performancePercentage']
+      const qualityPercentage = reduceMap['quality']['qualityPercentage']
+
       return {
         label: moment(date).add(value, 'day').locale('id').format('DD dddd'),
-        value: oee,
+        value: {oee, availabilityPercentage, performancePercentage, qualityPercentage},
         color: 'green'
       }
     }))
@@ -937,6 +984,62 @@ export class PlanningProductionReportService {
     return [...monthly, ...daily]
   }
 
+  async getDataReport(clientId) {
+    const startDay = moment().startOf('month').format('YYYY-MM-DD');
+    const endDay = moment().endOf('month').format('YYYY-MM-DD');
+    
+    const rangeDay = this.range(0, moment(endDay).diff(moment(startDay), 'day'))
+
+    const data = await (await Promise.all(rangeDay.map(async (value) => {
+      const date = moment(startDay).format('YYYY-MM-DD');
+      const startDate = moment(date).add(value, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+      const endDate = moment(date).add(value, 'day').endOf('day').format('YYYY-MM-DD HH:mm:ss');
+
+      const planMap = await this.planningProductionReportRepository.createQueryBuilder('planningProductionReport')
+        .leftJoinAndSelect('planningProductionReport.productionReportLineStop', 'productionReportLineStop')
+        .where('planningProductionReport.client_id = :client_id', { client_id: clientId })
+        .andWhere(`planningProductionReport.planning_date_time_in BETWEEN :startDate AND :endDate`, {
+          startDate, endDate
+        })
+        .getMany();
+
+      const planMapping =await Promise.all(planMap.map(async (productionReport, key) => {
+        const startPlan = moment(productionReport.planning_date_time_in).format('YYYY-MM-DD HH:mm:ss');
+        const endPlan = moment(productionReport.planning_date_time_out).format('YYYY-MM-DD HH:mm:ss');
+        const endPlanTarget = moment(startPlan).add(productionReport.planning_total, 'minute').format('YYYY-MM-DD HH:mm:ss');
+
+        let date = moment(startDate).format('YYYY-MM-DD')
+        const normalWorkingTime = moment(endPlanTarget).diff(moment(startPlan), 'minute');
+        const overTime = moment(endPlan).diff(moment(startPlan), 'minute');
+        const qtyActual = planMap.reduce((total, value) => total + Number(value.production_qty_actual),0)
+
+        const noPlanNormal = (await this.noPlanMachineService.findNoPlanByRange(clientId, startPlan, endPlanTarget))?.reduce((total, value) => (total + value.total), 0)
+        const noPlanOT = (await this.noPlanMachineService.findNoPlanByRange(clientId, startPlan, endPlan))?.reduce((total, value) => (total + value.total), 0)
+        
+        const downTime = productionReport.productionReportLineStop
+        
+        return { date, overTime, normalWorkingTime, qtyActual, noPlanNormal, noPlanOT, downTime };
+      }));
+      const plan = planMapping[0];
+      return { plan };
+    }))).map((item, key) => {
+      if (item.plan) {
+        return item.plan
+      } else {
+        let date = moment(startDay).add(key, 'day').format('YYYY-MM-DD')
+        const normalWorkingTime = null;
+        const overTime = null;
+        const qtyActual = null
+        const noPlanNormal = null
+        const noPlanOT = null
+        return { date, overTime, normalWorkingTime, qtyActual, noPlanNormal, noPlanOT };
+      }
+    })
+    // console.log(data);
+    
+    return data
+  }
+  
   range(start: number, end: number): number[] {
     return Array.from({ length: end - start + 1 }, (_, index) => start + index);
   }

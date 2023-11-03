@@ -318,4 +318,12 @@ export class NoPlanMachineService {
 
     return noPlan
   }
+  async findNoPlanByRange(clientId, start,end) {
+    const noPlan = await this.noPlanMachineRepository.createQueryBuilder('noPlanMachine')
+    .where('noPlanMachine.client_id = :clientId', {clientId})
+    .andWhere('noPlanMachine.time_in BETWEEN :start AND :end', {start, end})
+    .getMany()
+    
+    return noPlan
+  }
 }

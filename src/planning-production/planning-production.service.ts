@@ -232,7 +232,6 @@ export class PlanningProductionService {
     .andWhere('planningProduction.client_id = :client_id', {client_id: createPlanningProductionDto.client_id})
     .andWhere('machine.id = :machine', {machine: createPlanningProductionDto.machine})
     .getOne()
-    console.log(isActivePlan, createPlanningProductionDto.machine);
     
     // cek product
     const product = await this.productService.findOne(
@@ -599,7 +598,8 @@ export class PlanningProductionService {
       (activePlanProduction as any).message = null;
       return activePlanProduction;
     }
-    // throw new HttpException('No Active Plan', HttpStatus.NOT_FOUND);
+    // return null
+    throw new HttpException('No Active Plan', HttpStatus.NOT_FOUND);
   }
 
   async getLastPlanning(client_id: string) {

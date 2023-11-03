@@ -24,9 +24,9 @@ export class ConditionMachineProductionController {
     private readonly conditionMachineProductionService: ConditionMachineProductionService,
   ) {}
   
-  @Get()
-  async findAll(@Paginate() query: PaginateQuery, @Request() req) {
-    return await this.conditionMachineProductionService.findAll(query, req.user);
+  @Get(':machineId')
+  async findAll(@Paginate() query: PaginateQuery, @Request() req, @Param('machineId') machineId) {
+    return await this.conditionMachineProductionService.findAll(query, req.user, machineId);
   }
 
   @Patch(':id')

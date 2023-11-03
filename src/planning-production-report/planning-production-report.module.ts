@@ -6,6 +6,7 @@ import { PlanningProductionReport } from './entities/planning-production-report.
 import { ProductionReportLineStopModule } from 'src/production-report-line-stop/production-report-line-stop.module';
 import { ShiftModule } from 'src/shift/shift.module';
 import { PlanningProductionModule } from 'src/planning-production/planning-production.module';
+import { NoPlanMachineModule } from 'src/no-plan-machine/no-plan-machine.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { PlanningProductionModule } from 'src/planning-production/planning-produ
     forwardRef(() => ProductionReportLineStopModule),
     forwardRef(() => ShiftModule),
     forwardRef(() => PlanningProductionModule),
+    forwardRef(() => NoPlanMachineModule),
   ],
   controllers: [PlanningProductionReportController],
   providers: [PlanningProductionReportService],

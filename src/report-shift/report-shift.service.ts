@@ -94,11 +94,51 @@ export class ReportShiftService {
     });
   }
 
+  async getMessageLS(machineId) {
+    return new Promise((resolve, reject) => {
+      const connectUrl = process.env.MQTT_CONNECTION;
+
+      this.client = mqtt.connect(connectUrl, {
+        clientId: `mqtt_nest_${Math.random().toString(16).slice(3)}`,
+        clean: true,
+        connectTimeout: 4000,
+        username: '',
+        password: '',
+        reconnectPeriod: 1000,
+      });
+
+      this.client.on('connect', () => {
+        console.log('MQTT client connected');
+      });
+
+      this.client.subscribe(`MC${machineId}:LS:RPA`, { qos: 2 }, (err) => {
+        if (err) {
+          console.log(`Error subscribe topic : MC${machineId}:LS:RPA`, err);
+        }
+      });
+
+      this.client.on('message', (topic, message) => {
+        if (message) {
+          resolve(JSON.parse(message.toString()));
+        } else {
+          reject(new Error('Empty message received'));
+        }
+      });
+
+      this.client.on('error', (error) => {
+        console.log('Connection failed:', error);
+      });
+      this.client.end();
+    });
+  }
+
   async saveReportSchadule(
     planning: PlanningProduction,
     message: any,
     shift: Shift,
   ) {
+    const getMessageLS: any = await this.getMessageLS(planning.machine.id)
+    
     const reportShiftSebelumya = await this.reportShiftRepository.findOne({
       where: {
         planning_id: planning.id,
@@ -112,10 +152,9 @@ export class ReportShiftService {
     const endTime = moment(shift.time_end, 'HH:mm:ss');
 
     const durationInSeconds = endTime.diff(startTime, 'seconds');
+    const durationStartNowPlan = moment().diff(moment(planning.date_time_in), 'minute')
 
     const reportShift = new ReportShift();
-    console.log(planning);
-
     reportShift.client_id = planning.client_id;
     reportShift.machine_name = planning.machine.name;
     reportShift.product_part_name = planning.product.part_name;
@@ -127,10 +166,15 @@ export class ReportShiftService {
     reportShift.total_planning = planning.total_time_planning;
     reportShift.no_plan = noPlanning;
     reportShift.oprator_name = planning.user;
-    reportShift.qty_actual = reportShiftSebelumya
-      ? message['qty_actual'][0] - reportShift.qty_actual
-      : message['qty_actual'][0];
+    // reportShift.qty_actual = reportShiftSebelumya
+    //   ? message['qty_actual'][0] - reportShift.qty_actual
+    //   : message['qty_actual'][0];
+    reportShift.qty_actual =  message['qty_actual'][0];
     reportShift.planning_id = planning.id;
+    reportShift.availability = ( (durationStartNowPlan - getMessageLS.TotalTime[0]) / durationStartNowPlan )
+    reportShift.performance = ( (planning.product.cycle_time * message['qty_actual'][0]) / 60 ) / durationStartNowPlan
+    reportShift.quality = message['qty_actual'][0] / (message['qty_actual'][0] - 0) //emang rumusnya gitu dari adam
+    reportShift.oee = (reportShift.availability * reportShift.performance * reportShift.quality)
 
     return await this.reportShiftRepository.save(reportShift);
   }
@@ -208,5 +252,15 @@ export class ReportShiftService {
     }
 
     return totalDurasiDetik;
+  }
+
+  async findAllReport(client, machine) {
+    const reportShift = await this.reportShiftRepository.find({
+      where: {
+        client_id: client,
+        machine_name: machine
+      }
+    })
+    return reportShift
   }
 }
