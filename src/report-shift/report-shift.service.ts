@@ -9,6 +9,7 @@ import * as mqtt from 'mqtt';
 import { PlanningProductionService } from 'src/planning-production/planning-production.service';
 import { PlanningProduction } from 'src/planning-production/entities/planning-production.entity';
 import { NoPlanMachine } from 'src/no-plan-machine/entities/no-plan-machine.entity';
+import axios from 'axios';
 
 @Injectable()
 export class ReportShiftService {
@@ -153,6 +154,7 @@ export class ReportShiftService {
 
     const durationInSeconds = endTime.diff(startTime, 'seconds');
     const durationStartNowPlan = moment().diff(moment(planning.date_time_in), 'minute')
+    const durationStartPlanEndPlanEstimation = moment(moment(planning.date_time_in).add(planning.total_time_planning, 'minute')).diff(moment(planning.date_time_in), 'minute')
 
     const reportShift = new ReportShift();
     reportShift.client_id = planning.client_id;
@@ -175,6 +177,17 @@ export class ReportShiftService {
     reportShift.performance = ( (planning.product.cycle_time * message['qty_actual'][0]) / 60 ) / durationStartNowPlan
     reportShift.quality = message['qty_actual'][0] / (message['qty_actual'][0] - 0) //emang rumusnya gitu dari adam
     reportShift.oee = (reportShift.availability * reportShift.performance * reportShift.quality)
+
+
+// send notification to whatsapp
+    await axios.post(`${process.env.SERVICE_PER_JAM}/notification-whatsapp/end-shift`, {
+      clientId: reportShift.client_id,
+      qtyActual: reportShift.qty_actual,
+      qtyPlan: reportShift.qty_plan,
+      oee: reportShift.oee,
+      totalTimeEstimation: durationStartPlanEndPlanEstimation,
+      totalTimeActual: durationStartNowPlan
+    })
 
     return await this.reportShiftRepository.save(reportShift);
   }
