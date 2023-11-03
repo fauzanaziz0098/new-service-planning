@@ -324,6 +324,39 @@ export class PlanningProductionService {
     }
   }
 
+  async getMessage(machineId) {
+    return new Promise((resolve, reject) => {
+      const connectUrl = process.env.MQTT_CONNECTION;
+
+      this.client = mqtt.connect(connectUrl, {
+        clientId: `mqtt_nest_${Math.random().toString(16).slice(3)}`,
+        clean: true,
+        connectTimeout: 4000,
+        username: '',
+        password: '',
+        reconnectPeriod: 1000,
+      });
+
+      this.client.on('connect', () => {
+        console.log('MQTT client connected');
+      });
+
+      this.client.subscribe(`MC${machineId}:STOP:RPA`, { qos: 2 }, (err) => {
+        if (err) {
+          console.log(`Error subscribe topic : MC${machineId}:PLAN:RPA`, err);
+        }
+      });
+  
+      this.client.on("message", (topic, message: any) => {
+        if (message) {
+          const messageReceive = JSON.parse(message.toString());
+          resolve(messageReceive);
+        } else {
+          reject(new Error('Empty message received'));
+        }
+      })
+    })
+  }
   async stopPlanningProduction(client_id: string, token, machineId) {
     // cek aktif plan
     const activePlan = await this.planningProductionRepository.createQueryBuilder('planningProduction')
@@ -338,6 +371,8 @@ export class PlanningProductionService {
     if (!activePlan) {
       return 'No Active Plan';
     }
+    const getMessageMqtt: any = await this.getMessage(machineId)
+    const qtyNg = getMessageMqtt?.qty_ng[0]
 
     // cek plan berikutnya yang akan aktif
     const nextPlan = await this.planningProductionRepository
@@ -406,6 +441,7 @@ export class PlanningProductionService {
           dandory_time: -1,
           date_time_out: activePlanDateTimeOut,
           total_time_actual: differenceTime,
+          qty_reject: qtyNg,
           // qty_per_minute: parseFloat(qty.toFixed(2)),
           qty_per_hour: Math.round(qty * 60),
         });
@@ -455,6 +491,7 @@ export class PlanningProductionService {
           await this.planningProductionRepository.update(activePlan.id, {
             active_plan: false,
             dandory_time: null,
+            qty_reject: qtyNg,
           });
           const newNextPlan = this.planningProductionRepository.findOne({
             where: { id: nextPlan.id, client_id: client_id },
@@ -494,6 +531,7 @@ export class PlanningProductionService {
           total_time_actual: differenceTime,
           // qty_per_minute: parseFloat(qty.toFixed(2)),
           qty_per_hour: Math.round(qty * 60),
+          qty_reject: qtyNg,
         });
 
          // for save last production
@@ -537,6 +575,7 @@ export class PlanningProductionService {
       total_time_actual: differenceTime,
       // qty_per_minute: parseFloat(qty.toFixed(2)),
       qty_per_hour: Math.round(qty * 60),
+      qty_reject: qtyNg,
     });
 
     // for create report
@@ -550,7 +589,7 @@ export class PlanningProductionService {
     );
 
     // for Create report shift
-    // await this.reportShiftService.saveReportIfStop(activePlan);
+    await this.reportShiftService.saveReportIfStop(activePlan);
 
     // return 'All Plan In Queue Has Been Finished';
     return 'No Plan In Queue, No Active Plan';
