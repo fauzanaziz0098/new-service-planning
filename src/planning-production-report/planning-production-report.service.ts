@@ -73,6 +73,12 @@ export class PlanningProductionReportService {
         `${process.env.SERVICE_PER_JAM}/production/last-production/${createPlanningProductionReportDto.planning.id}`,
       )
     ).data.data;
+    const startPlan = moment(createPlanningProductionReportDto.planning.date_time_in).format('YYYY-MM-DD HH:mm:ss');
+    const endPlan = moment(createPlanningProductionReportDto.planning.date_time_out).format('YYYY-MM-DD HH:mm:ss');
+    const endPlanTarget = moment(startPlan).add(createPlanningProductionReportDto.planning.total_time_planning, 'minute').format('YYYY-MM-DD HH:mm:ss');
+
+    const noPlanNormal = (await this.noPlanMachineService.findNoPlanByRange(createPlanningProductionReportDto.planning.client_id, startPlan, endPlanTarget))?.reduce((total, value) => (total + value.total), 0)
+    const noPlanOT = (await this.noPlanMachineService.findNoPlanByRange(createPlanningProductionReportDto.planning.client_id, startPlan, endPlan))?.reduce((total, value) => (total + value.total), 0)
 
     const saveData = await this.planningProductionReportRepository.save({
       client_id: createPlanningProductionReportDto.planning.client_id,
@@ -114,6 +120,8 @@ export class PlanningProductionReportService {
 
       oprator: createPlanningProductionReportDto.planning.user,
       production_qty_actual: Number(lastProduction.qty_actual),
+      noPlanNormal: noPlanNormal,
+      noPlanOT: noPlanOT
     });
 
     const respons = (
@@ -138,7 +146,7 @@ export class PlanningProductionReportService {
         this.productionReportLineStopService.create({
           planningProductionReport: saveData,
           timeTotal: moment.duration(item.sum, 'seconds').minutes(),
-          lineStopName: item.lineStop_name,
+          lineStopName: item.reportLossTime_line_stop,
         }),
       );
     }

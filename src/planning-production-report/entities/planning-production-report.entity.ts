@@ -62,6 +62,12 @@ export class PlanningProductionReport {
   @Column('numeric', { nullable: true })
   production_qty_actual: number;
 
+  @Column('numeric', { nullable: true })
+  noPlanNormal: number;
+
+  @Column('numeric', { nullable: true })
+  noPlanOT: number;
+
   @CreateDateColumn()
   created_at: Date;
 

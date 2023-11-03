@@ -1,4 +1,4 @@
 export interface VariableResponLineStopReport {
-  lineStop_name: string;
+  reportLossTime_line_stop: string;
   sum: number;
 }

@@ -372,7 +372,7 @@ export class PlanningProductionService {
       return 'No Active Plan';
     }
     const getMessageMqtt: any = await this.getMessage(machineId)
-    const qtyNg = getMessageMqtt?.qty_ng[0]
+    const qtyNg = getMessageMqtt?.qty_ng ? getMessageMqtt?.qty_ng[0] : 0
 
     // cek plan berikutnya yang akan aktif
     const nextPlan = await this.planningProductionRepository
