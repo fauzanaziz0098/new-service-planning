@@ -1,19 +1,19 @@
-import { IsNotEmpty } from "class-validator";
+import { IsNotEmpty } from 'class-validator';
+import { PlanningProduction } from 'src/planning-production/entities/planning-production.entity';
+import { Machine } from 'src/machine/entities/machine.entity';
 
 export class CreatePresenceDto {
-    @IsNotEmpty()
-    user_id: number;
+  client_id: string;
 
-    @IsNotEmpty()
-    planning_id: number;
+  // @IsNotEmpty()
+  operator: string;
 
-    @IsNotEmpty()
-    shift_id: number;
+  @IsNotEmpty()
+  planning_production: PlanningProduction;
 
-    check_in_at: Date
+  machine: Machine;
 
-    check_out_at: Date
+  is_absen?: boolean;
 
-    @IsNotEmpty()
-    card_number: boolean
+  card_number?: string;
 }

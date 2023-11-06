@@ -1,4 +1,5 @@
 import { PlanningProduction } from 'src/planning-production/entities/planning-production.entity';
+import { Presence } from 'src/presence/entities/presence.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -27,6 +28,12 @@ export class Machine {
     (planningProudction) => planningProudction.machine,
   )
   planningProduction: PlanningProduction[];
+
+  @OneToMany(
+    () => Presence,
+    (planningProudction) => planningProudction.machine,
+  )
+  presence: Presence;
 
   @CreateDateColumn()
   created_at: Date;

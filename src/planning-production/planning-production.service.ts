@@ -744,6 +744,7 @@ export class PlanningProductionService {
       .leftJoinAndSelect('planningProduction.machine', 'machine')
       .leftJoinAndSelect('planningProduction.product', 'product')
       .leftJoinAndSelect('planningProduction.shift', 'shift')
+      .leftJoinAndSelect('planningProduction.presence', 'presence')
       .where('planningProduction.client_id = :client_id', { client_id: clientId });
     var filterableColumns = {};
     if (query.filter?.['machine']) {

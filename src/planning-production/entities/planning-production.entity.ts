@@ -12,6 +12,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
+import { Presence } from 'src/presence/entities/presence.entity';
 
 @Entity()
 export class PlanningProduction {
@@ -74,6 +75,12 @@ export class PlanningProduction {
     (noPlanMachineAdditional) => noPlanMachineAdditional.planning_production,
   )
   no_plan_machine_additional: NoPlanMachineAdditional;
+
+  @OneToMany(
+    () => Presence,
+    (presence) => presence.planning_production,
+  )
+  presence: Presence;
 
   @CreateDateColumn()
   created_at: Date;

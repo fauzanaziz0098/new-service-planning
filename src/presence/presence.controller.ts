@@ -11,17 +11,22 @@ export class PresenceController {
   constructor(private readonly presenceService: PresenceService) {}
 
   @UseGuards(AuthGuard('jwt'))
-  @Post('check-in')
-  checkIn(@Body() createPresenceDto: CreatePresenceDto, @Req() req: Request) {
-    return this.presenceService.checkIn(createPresenceDto, req.user['client']);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Post('check-in')
-  checkOut(@Body() updatePresenceDto: UpdatePresenceDto, @Req() req: Request) {
-    return this.presenceService.checkOut(updatePresenceDto, req.user['client']);
+  @Post()
+  async create(@Body() createPresenceDto: CreatePresenceDto, @Req() req: Request) {
+    return this.presenceService.create(createPresenceDto, req.user['client'])
   }
   
+  @UseGuards(AuthGuard('jwt'))
+  @Get(':planId')
+  async getOperatorPlan(@Param('planId') planId, @Req() req: Request) {
+    return this.presenceService.getOperatorPlan(planId, req.user['client'])
+  }
+
+  @Post('check-in')
+  checkIn(@Body() createPresenceDto: CreatePresenceDto) {
+    return this.presenceService.checkIn(createPresenceDto);
+  }
+
   @UseGuards(AuthGuard('jwt'))
   @Get()
   findAll(@Paginate() query: PaginateQuery, @Req() req: Request) {

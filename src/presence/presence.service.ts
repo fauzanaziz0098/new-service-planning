@@ -6,6 +6,7 @@ import { Presence } from './entities/presence.entity';
 import { Repository } from 'typeorm';
 import moment from 'moment';
 import { PaginateConfig, PaginateQuery, paginate } from 'nestjs-paginate';
+import axios from 'axios';
 
 @Injectable()
 export class PresenceService {
@@ -13,48 +14,51 @@ export class PresenceService {
     @InjectRepository(Presence) private readonly presenceRepository:Repository<Presence>
   ) {}
 
-  async checkIn(createPresenceDto: CreatePresenceDto, clientId: string) {
-    const existUser = await this.presenceRepository.createQueryBuilder('presence')
-    .where('presence.client_id = :client', {clientId})
-    .andWhere('DATE(presence.created_at)= :dateNow', {dateNow: moment().format('YYYY-MM-DD')})
-    .andWhere('presence.user_id = :userId', {userId: createPresenceDto.user_id})
+  async create(createPresenceDto: CreatePresenceDto, client_id) {
+    createPresenceDto.client_id = client_id
+    const existOperator = await this.presenceRepository.createQueryBuilder('presence')
+    .leftJoinAndSelect('presence.planning_production', 'planning_production')
+    .where('presence.client_id = :client_id', {client_id})
+    .andWhere('presence.operator = :operator', {operator: createPresenceDto.operator})
+    .andWhere('planning_production.id = :planningId', {planningId: createPresenceDto.planning_production})
     .getOne()
 
-    if (!existUser) {
-      createPresenceDto.check_in_at = moment().toDate()
-      const presence = await this.presenceRepository.save(createPresenceDto)
-      return presence
+    if (existOperator) {
+      throw new HttpException("This operator has been added in this plan", HttpStatus.BAD_REQUEST);
     }
-    throw new HttpException(`This user already check in at ${existUser.check_in_at}`, HttpStatus.BAD_REQUEST);
+
+    const operator = await this.presenceRepository.save(createPresenceDto)
+    return operator
   }
 
-  async checkOut(updatePresenceDto: UpdatePresenceDto, clientId: string) {
-    const alreadyCheckInOut = await this.presenceRepository.createQueryBuilder('presence')
-    .where('presence.client_id = :client', {clientId})
-    .andWhere('DATE(presence.created_at)= :dateNow', {dateNow: moment().format('YYYY-MM-DD')})
-    .andWhere('presence.user_id = :userId', {userId: updatePresenceDto.user_id})
-    .andWhere('presence.check_in_at IS NOT NULL')
-    .andWhere('presence.check_out_at IS NOT NULL')
+  async getOperatorPlan(planId, clientId) {
+    return this.presenceRepository.createQueryBuilder('presence')
+    .leftJoinAndSelect('presence.planning_production', 'planning_production')
+    .where('presence.client_id = :clientId', {clientId})
+    .andWhere('planning_production.id = :planId', {planId})
+    .getMany()
+  }
+  
+  async checkIn(createPresenceDto: CreatePresenceDto) {
+    const plan = await this.presenceRepository.createQueryBuilder('presence')
+    .leftJoinAndSelect('presence.planning_production', 'planning_production')
+    .andWhere('presence.operator = :operator', {operator: createPresenceDto.operator})
+    .andWhere('planning_production.id = :planningId', {planningId: createPresenceDto.planning_production})
     .getOne()
-
-
-    const checkIn = await this.presenceRepository.createQueryBuilder('presence')
-    .where('presence.client_id = :client', {clientId})
-    .andWhere('DATE(presence.created_at)= :dateNow', {dateNow: moment().format('YYYY-MM-DD')})
-    .andWhere('presence.user_id = :userId', {userId: updatePresenceDto.user_id})
-    .andWhere('presence.check_in_at IS NOT NULL')
-    .andWhere('presence.check_out_at IS NULL')
-    .getOne()
-
-    if (alreadyCheckInOut) {
-      throw new HttpException(`This user already check in at ${alreadyCheckInOut.check_in_at} and check out at ${alreadyCheckInOut.check_out_at}`, HttpStatus.BAD_REQUEST);
+    if (plan) {
+      createPresenceDto.client_id = plan.client_id
+      const validateOperator = (await axios.post(`${process.env.SERVICE_AUTH}/users/validate-presence`, createPresenceDto)).data
+      if (validateOperator.data) {
+        if (plan.is_absen == true) {
+          return 'You already presence'
+        }
+        await this.presenceRepository.update(plan.id, {is_absen: true})
+        return 'Success'
+      }
+      return 'Failed'
     }
-    if (checkIn) {
-      updatePresenceDto.check_out_at = moment().toDate()
-      const presence = await this.presenceRepository.update(checkIn.id, updatePresenceDto)
-      return presence
-    }
-    throw new HttpException("This user not check in yet", HttpStatus.NOT_FOUND);
+    throw new HttpException("Operator Not Found", HttpStatus.NOT_FOUND);
+    
   }
 
   findAll(query: PaginateQuery, clientId: string) {
@@ -62,13 +66,13 @@ export class PresenceService {
     .createQueryBuilder('presence')
     .where('presence.client_id = :client', {client: clientId})
     var filterableColumns = {}
-    if (query?.filter['userId']) {
-      queryBuilder.andWhere('presence.user_id =: userId', {userId: query.filter.userId})
+    if (query?.filter['operator']) {
+      queryBuilder.andWhere('presence.user_id =: operator', {operator: query.filter.operator})
     }
 
     const config: PaginateConfig<Presence> = {
       sortableColumns: ['id'],
-      searchableColumns: ['user_id'],
+      searchableColumns: ['operator'],
       filterableColumns,
     }
     

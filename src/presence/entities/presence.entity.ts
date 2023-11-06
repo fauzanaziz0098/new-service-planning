@@ -1,4 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { PlanningProduction } from '../../planning-production/entities/planning-production.entity';
+import { Machine } from 'src/machine/entities/machine.entity';
 
 @Entity()
 export class Presence {
@@ -6,22 +8,27 @@ export class Presence {
     id: number;
 
     @Column()
-    user_id: number;
+    client_id: string;
 
     @Column()
-    planning_id: number;
+    operator: string;
 
-    @Column()
-    shift_id: number;
+    @ManyToOne(
+        () => PlanningProduction,
+        (planningProduction) => planningProduction.presence,
+    )
+    @JoinColumn({ name: 'planning_production_id' })
+    planning_production: PlanningProduction;
 
-    @Column({nullable: true})
-    check_in_at: Date
-
-    @Column({nullable: true})
-    check_out_at: Date
-
-    @Column()
-    card_number: boolean
+    @ManyToOne(
+        () => Machine,
+        (Machine) => Machine.presence,
+    )
+    @JoinColumn({ name: 'machine_id' })
+    machine: Machine;
+    
+    @Column({default: false})
+    is_absen: boolean
 
     @CreateDateColumn()
     created_at: Date
