@@ -19,6 +19,7 @@ import { ReportShiftModule } from './report-shift/report-shift.module';
 import { ConditionMachineModule } from './condition-machine/condition-machine.module';
 import { ConditionMachineProductionModule } from './condition-machine-production/condition-machine-production.module';
 import { ReportOeeModule } from './report-oee/report-oee.module';
+import { PresenceModule } from './presence/presence.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { ReportOeeModule } from './report-oee/report-oee.module';
     ConditionMachineModule,
     ConditionMachineProductionModule,
     ReportOeeModule,
+    PresenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
