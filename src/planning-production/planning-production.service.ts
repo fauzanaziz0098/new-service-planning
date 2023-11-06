@@ -205,7 +205,7 @@ export class PlanningProductionService {
     })
   }
 
-  private async resetPlanStatus(machineId, variablePlan, variableReset) {
+  private async resetPlanStatus(machineId, variablePlan, variableReset, stoppedPlan?: PlanningProduction) {
     let message = {
       ResetTotal: [variableReset],
       PlanStatus: [variablePlan],
@@ -219,6 +219,31 @@ export class PlanningProductionService {
         }
       },
     );
+    
+    if (stoppedPlan) {
+      let messagePlan = {
+        mc_run: [false],
+        mc_idle: [false],
+        mc_stop: [false],
+        CauseLS: [0],
+        qty_actual: [0],
+        qty_hour: [0],
+        mc_noplan: [false],
+        OperatorId: [stoppedPlan.user],
+        ShiftName: [stoppedPlan.shift.name],
+        clientId: [stoppedPlan.client_id],
+        PlanId: [stoppedPlan.id]
+      }	
+      
+      const sendVariablePlan = JSON.stringify(messagePlan)
+      this.client.publish(`MC${machineId}:PLAN:RPA`, sendVariablePlan,{qos: 2, retain: true},
+        (error) => {
+          if (error) {
+            console.log(`Error publishing message to MC${machineId}:PLAN:RPA, error: `, error)
+          }
+        }
+      )
+    }
   }
   // CREATE PLANNING PRODUCTION
   async createPlanningProduction(
@@ -453,7 +478,7 @@ export class PlanningProductionService {
           }, 2000);
 
           // reset plan status mqtt activePlan stop plan
-          this.resetPlanStatus(activePlan.machine.id, true, true)
+          this.resetPlanStatus(activePlan.machine.id, true, true, activePlan)
           setTimeout(() => {
             this.resetPlanStatus(activePlan.machine.id, true, false)
           }, 2000);
@@ -511,7 +536,7 @@ export class PlanningProductionService {
         }, 2000);
 
         // reset plan status mqtt activePlan stop plan
-        this.resetPlanStatus(activePlan.machine.id, true, true)
+        this.resetPlanStatus(activePlan.machine.id, true, true, activePlan)
         setTimeout(() => {
           this.resetPlanStatus(activePlan.machine.id, true, false)
         }, 2000);
@@ -558,7 +583,7 @@ export class PlanningProductionService {
       }
     }
     // reset plan status mqtt activePlan stop plan
-    this.resetPlanStatus(activePlan.machine.id, true, true)
+    this.resetPlanStatus(activePlan.machine.id, true, true, activePlan)
     setTimeout(() => {
       this.resetPlanStatus(activePlan.machine.id, true, false)
     }, 2000);
