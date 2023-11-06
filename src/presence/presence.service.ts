@@ -45,22 +45,28 @@ export class PresenceService {
     const plan = await this.presenceRepository.createQueryBuilder('presence')
     .leftJoinAndSelect('presence.planning_production', 'planning_production')
     .leftJoinAndSelect('presence.machine', 'machine')
-    .andWhere('presence.operator = :operator', {operator: createPresenceDto.operator})
     .andWhere('planning_production.id = :planningId', {planningId: createPresenceDto.planning_production})
     .getOne()
     if (plan) {
       createPresenceDto.client_id = plan.client_id
-      const validateOperator = (await axios.post(`${process.env.SERVICE_AUTH}/users/validate-presence`, createPresenceDto)).data
-      if (validateOperator.data) {
-        if (plan.is_absen == true) {
-          return 'You already presence'
+      const validateOperator = (await axios.post(`${process.env.SERVICE_AUTH}/users/validate-presence`, createPresenceDto)).data?.data
+      if (validateOperator) {
+        const presence = await this.presenceRepository.findOne({
+          where: {client_id: createPresenceDto.client_id, operator: validateOperator.name, planning_production: createPresenceDto.planning_production},
+          relations: ['planning_production', 'machine']
+        })
+        if (presence) {
+          if (presence.is_absen == true) {
+            return 'You already presence'
+          }
+          const message = await this.getMessage(presence.machine.id)
+          this.sendMessage(message, presence)
+          await this.presenceRepository.update(presence.id, {is_absen: true})
+          return 'Success'
         }
-        const message = await this.getMessage(plan.machine.id)
-        this.sendMessage(message, plan)
-        await this.presenceRepository.update(plan.id, {is_absen: true})
-        return 'Success'
+        return 'Failed'
       }
-      return 'Failed'
+      throw new HttpException("Operator Not Found", HttpStatus.NOT_FOUND);
     }
     throw new HttpException("Operator Not Found", HttpStatus.NOT_FOUND);
   }
