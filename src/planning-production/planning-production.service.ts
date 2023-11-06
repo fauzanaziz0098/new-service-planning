@@ -93,13 +93,13 @@ export class PlanningProductionService {
         console.log(`Error subscribe topic : MC${machineId}:PLAN:RPA`, err);
       }
     });
-
+    const operator = (plan?.presence?.filter(item => item.is_absen === true).sort((a, b) => b.updated_at - a.updated_at)[0])?.operator ?? plan?.user;
     this.client.on("message", (topic, message: any) => {
       const topicSplit = topic.split(":")[0]
       // console.log(topicSplit.replace("MC", "") == plan.machine.id);
       if (topicSplit.replace("MC", "") == plan.machine.id) {
         message = JSON.parse(message)
-        message.OperatorId = [plan?.user];
+        message.OperatorId = [operator];
         message.ShiftName = [plan?.shift?.name ? plan.shift.name : ''];
         message.clientId = [plan?.client_id];
         message.PlanId = [plan?.id];
@@ -734,7 +734,7 @@ export class PlanningProductionService {
       where: {
         active_plan: true,
       },
-      relations: ['machine', 'product', 'shift'],
+      relations: ['machine', 'product', 'shift', 'presence'],
     });
   }
 

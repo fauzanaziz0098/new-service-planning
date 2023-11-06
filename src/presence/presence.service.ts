@@ -7,9 +7,11 @@ import { Repository } from 'typeorm';
 import moment from 'moment';
 import { PaginateConfig, PaginateQuery, paginate } from 'nestjs-paginate';
 import axios from 'axios';
+import * as mqtt from 'mqtt';
 
 @Injectable()
 export class PresenceService {
+  private client: mqtt.MqttClient;
   constructor(
     @InjectRepository(Presence) private readonly presenceRepository:Repository<Presence>
   ) {}
@@ -42,6 +44,7 @@ export class PresenceService {
   async checkIn(createPresenceDto: CreatePresenceDto) {
     const plan = await this.presenceRepository.createQueryBuilder('presence')
     .leftJoinAndSelect('presence.planning_production', 'planning_production')
+    .leftJoinAndSelect('presence.machine', 'machine')
     .andWhere('presence.operator = :operator', {operator: createPresenceDto.operator})
     .andWhere('planning_production.id = :planningId', {planningId: createPresenceDto.planning_production})
     .getOne()
@@ -52,13 +55,14 @@ export class PresenceService {
         if (plan.is_absen == true) {
           return 'You already presence'
         }
+        const message = await this.getMessage(plan.machine.id)
+        this.sendMessage(message, plan)
         await this.presenceRepository.update(plan.id, {is_absen: true})
         return 'Success'
       }
       return 'Failed'
     }
     throw new HttpException("Operator Not Found", HttpStatus.NOT_FOUND);
-    
   }
 
   findAll(query: PaginateQuery, clientId: string) {
@@ -79,15 +83,47 @@ export class PresenceService {
     return paginate<Presence>(query, queryBuilder, config)
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} presence`;
+  async sendMessage(message, presence) {
+    message.operatorId = [presence.operator]
+    const sendVariable = JSON.stringify(message)
+    this.client.publish(`MC${presence.machine.id}:PLAN:RPA`,sendVariable, {qos: 2, retain: true}, (error) => {
+      if (error) {
+        console.error('Error publishing message:', error);
+      }
+    },)
   }
 
-  update(id: number, updatePresenceDto: UpdatePresenceDto) {
-    return `This action updates a #${id} presence`;
-  }
+  async getMessage(machineId) {
+    return new Promise((resolve, reject) => {
+      const connectUrl = process.env.MQTT_CONNECTION;
 
-  remove(id: number) {
-    return `This action removes a #${id} presence`;
+      this.client = mqtt.connect(connectUrl, {
+        clientId: `mqtt_nest_${Math.random().toString(16).slice(3)}`,
+        clean: true,
+        connectTimeout: 4000,
+        username: '',
+        password: '',
+        reconnectPeriod: 1000,
+      });
+
+      this.client.on('connect', () => {
+        console.log('MQTT client connected');
+      });
+
+      this.client.subscribe(`MC${machineId}:PLAN:RPA`, { qos: 2 }, (err) => {
+        if (err) {
+          console.log(`Error subscribe topic : MC${machineId}:PLAN:RPA`, err);
+        }
+      });
+  
+      this.client.on("message", (topic, message: any) => {
+        if (message) {
+          const messageReceive = JSON.parse(message.toString());
+          resolve(messageReceive);
+        } else {
+          reject(new Error('Empty message received'));
+        }
+      })
+    })
   }
 }

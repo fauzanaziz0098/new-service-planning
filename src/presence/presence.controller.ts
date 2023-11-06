@@ -32,19 +32,4 @@ export class PresenceController {
   findAll(@Paginate() query: PaginateQuery, @Req() req: Request) {
     return this.presenceService.findAll(query, req.user['client']);
   }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.presenceService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePresenceDto: UpdatePresenceDto) {
-    return this.presenceService.update(+id, updatePresenceDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.presenceService.remove(+id);
-  }
 }
