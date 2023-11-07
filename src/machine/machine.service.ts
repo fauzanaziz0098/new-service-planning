@@ -54,6 +54,7 @@ export class MachineService {
   async findAll(query: PaginateQuery, client_id: string) {
     const queryBuilder = this.machineRepository
       .createQueryBuilder('machine')
+      .leftJoinAndSelect('machine.planningProduction', 'planningProduction')
       .where('machine.client_id = :client_id', { client_id: client_id });
     var filterableColumns = {};
     if (query.filter?.['name']) {
