@@ -96,4 +96,13 @@ export class NoPlanMachineController {
     const day = moment().format('dddd')?.toLowerCase()
     return this.noPlanMachineService.findOneByShift(shiftId, day)    
   }
+
+  @Get('no-plan-by-range/:clientId/:start/:end')
+  async findNoPlanByRange(
+    @Param('clientId') clientId, 
+    @Param('start') start, 
+    @Param('end') end, 
+  ) {
+    return this.noPlanMachineService.findNoPlanByRange(clientId, start, end)
+  }
 }
