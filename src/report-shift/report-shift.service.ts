@@ -168,11 +168,12 @@ export class ReportShiftService {
     reportShift.total_planning = planning.total_time_planning;
     reportShift.no_plan = noPlanning;
     reportShift.oprator_name = planning.user;
-    // reportShift.qty_actual = reportShiftSebelumya
-    //   ? message['qty_actual'][0] - reportShift.qty_actual
-    //   : message['qty_actual'][0];
-    reportShift.qty_actual =  message['qty_actual'][0];
+    reportShift.qty_actual = reportShiftSebelumya
+      ? message['qty_actual'][0] - reportShift.qty_actual
+      : message['qty_actual'][0];
+    // reportShift.qty_actual =  message['qty_actual'][0];
     reportShift.planning_id = planning.id;
+    reportShift.qty_ng = planning.qty_reject;
     reportShift.availability = ( (durationStartNowPlan - getMessageLS.TotalTime[0]) / durationStartNowPlan )
     reportShift.performance = ( (planning.product.cycle_time * message['qty_actual'][0]) / 60 ) / durationStartNowPlan
     reportShift.quality = message['qty_actual'][0] / (message['qty_actual'][0] - 0) //emang rumusnya gitu dari adam
@@ -249,6 +250,7 @@ export class ReportShiftService {
       ? message['qty_actual'][0] - reportShiftSebelumya.qty_actual
       : message['qty_actual'][0];
     reportShift.planning_id = planning.id;
+    reportShift.qty_ng = planning.qty_reject;
     reportShift.availability = ( (durationStartNowPlan - getMessageLS.TotalTime[0] - noPlan) / (durationStartNowPlan - noPlan) )
     reportShift.performance = ( (planning.product.cycle_time * message['qty_actual'][0]) / 60 ) / (durationStartNowPlan - getMessageLS.TotalTime[0] - noPlan)
     reportShift.quality = message['qty_actual'][0] / (message['qty_actual'][0] - 0) //emang rumusnya gitu dari adam

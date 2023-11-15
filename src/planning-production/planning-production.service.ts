@@ -610,6 +610,7 @@ export class PlanningProductionService {
     // activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
     activePlan.qty_per_hour = Math.round(qty * 60);
     activePlan.total_time_actual = differenceTime;
+    activePlan.qty_reject = qtyNg;
     await this.planningProductionReportService.create(
       { planning: activePlan },
       token,

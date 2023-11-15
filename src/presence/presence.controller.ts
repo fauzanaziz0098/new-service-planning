@@ -24,6 +24,7 @@ export class PresenceController {
 
   @Post('check-in')
   checkIn(@Body() createPresenceDto: CreatePresenceDto) {
+    console.log(createPresenceDto);
     return this.presenceService.checkIn(createPresenceDto);
   }
 
