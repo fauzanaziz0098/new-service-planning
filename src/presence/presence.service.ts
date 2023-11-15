@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Inject, forwardRef } from '@nestjs/common';
 import { CreatePresenceDto } from './dto/create-presence.dto';
 import { UpdatePresenceDto } from './dto/update-presence.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,12 +8,16 @@ import moment from 'moment';
 import { PaginateConfig, PaginateQuery, paginate } from 'nestjs-paginate';
 import axios from 'axios';
 import * as mqtt from 'mqtt';
+import { PlanningProductionService } from 'src/planning-production/planning-production.service';
 
 @Injectable()
 export class PresenceService {
   private client: mqtt.MqttClient;
   constructor(
-    @InjectRepository(Presence) private readonly presenceRepository:Repository<Presence>
+    @InjectRepository(Presence) private readonly presenceRepository:Repository<Presence>,
+    @Inject(forwardRef(() => PlanningProductionService))
+    private planningProductionService: PlanningProductionService,
+    
   ) {}
 
   async create(createPresenceDto: CreatePresenceDto, client_id) {
@@ -42,29 +46,34 @@ export class PresenceService {
   }
   
   async checkIn(createPresenceDto: CreatePresenceDto) {
-    const plan = await this.presenceRepository.createQueryBuilder('presence')
-    .leftJoinAndSelect('presence.planning_production', 'planning_production')
-    .leftJoinAndSelect('presence.machine', 'machine')
-    .andWhere('planning_production.id = :planningId', {planningId: createPresenceDto.planning_production})
-    .getOne()
+    const plan = await this.planningProductionService.findOnePlanByMachine(createPresenceDto.machine_id)
     if (plan) {
       createPresenceDto.client_id = plan.client_id
       const validateOperator = (await axios.post(`${process.env.SERVICE_AUTH}/users/validate-presence`, createPresenceDto)).data?.data
       if (validateOperator) {
-        const presence = await this.presenceRepository.findOne({
-          where: {client_id: createPresenceDto.client_id, operator: validateOperator.name, planning_production: createPresenceDto.planning_production},
-          relations: ['planning_production', 'machine']
-        })
+        
+        // const presence = await this.presenceRepository.findOne({
+        //   where: {client_id: createPresenceDto.client_id, operator: validateOperator.name, planning_production: createPresenceDto.planning_production},
+        //   relations: ['planning_production', 'machine']
+        // })
+        const presence = await this.presenceRepository.createQueryBuilder('presence')
+        .leftJoinAndSelect('presence.machine', 'machine')
+        .leftJoinAndSelect('presence.planning_production', 'planning_production')
+        .where('presence.client_id = :clientId', {clientId: createPresenceDto.client_id})
+        .andWhere('presence.operator = :operator', {operator: validateOperator.name})
+        .andWhere('planning_production.id = :planId', {planId: plan.id})
+        .getOne()
+        
         if (presence) {
           if (presence.is_absen == true) {
-            return 'You already presence'
+            return '2'
           }
           const message = await this.getMessage(presence.machine.id)
           this.sendMessage(message, presence)
           await this.presenceRepository.update(presence.id, {is_absen: true})
-          return 'Success'
+          return '1'
         }
-        return 'Failed'
+        return '3'
       }
       throw new HttpException("Operator Not Found", HttpStatus.NOT_FOUND);
     }

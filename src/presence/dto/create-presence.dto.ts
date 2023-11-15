@@ -8,10 +8,12 @@ export class CreatePresenceDto {
   // @IsNotEmpty()
   operator: string;
 
-  @IsNotEmpty()
+  // @IsNotEmpty()
   planning_production: PlanningProduction;
 
   machine: Machine;
+
+  machine_id?: Machine | Number;
 
   is_absen?: boolean;
 

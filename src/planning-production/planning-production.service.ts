@@ -831,4 +831,12 @@ export class PlanningProductionService {
       }
     })
   }
+
+  async findOnePlanByMachine(machineId) {
+    return this.planningProductionRepository.createQueryBuilder('planningProduction')
+    .leftJoinAndSelect('planningProduction.machine', 'machine')
+    .where('machine.id = :machineId', {machineId})
+    .andWhere('planningProduction.active_plan = :activePlan', {activePlan: true})
+    .getOne()
+  }
 }
