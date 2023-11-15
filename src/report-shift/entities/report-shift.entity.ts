@@ -59,6 +59,9 @@ export class ReportShift {
   @Column('numeric', {nullable: true})
   oee: number
 
+  @Column('numeric', {nullable: true})
+  qty_ng: number
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -90,7 +90,7 @@ export class PlanningProductionReportService {
             createPlanningProductionReportDto.planning.date_time_in,
           ).format('HH:mm:ss'),
         )
-      ).name,
+      )?.name,
       shift_end: (
         await this.shiftService.getShiftBatewinByTimeEnd(
           createPlanningProductionReportDto.planning.client_id,
@@ -98,7 +98,7 @@ export class PlanningProductionReportService {
             createPlanningProductionReportDto.planning.date_time_out,
           ).format('HH:mm:ss'),
         )
-      ).name,
+      )?.name,
       // product
       product_part_name:
         createPlanningProductionReportDto.planning.product.part_name,

@@ -471,18 +471,19 @@ export class PlanningProductionService {
           qty_per_hour: Math.round(qty * 60),
         });
         setTimeout(async () => {
-          // reset plan status mqtt nextPlan start plan
-          this.resetPlanStatus(nextPlan.machine.id, false, true)
-          setTimeout(() => {
-            this.resetPlanStatus(nextPlan.machine.id, false, false)
-          }, 2000);
-
           // reset plan status mqtt activePlan stop plan
           this.resetPlanStatus(activePlan.machine.id, true, true, activePlan)
           setTimeout(() => {
             this.resetPlanStatus(activePlan.machine.id, true, false)
           }, 2000);
-
+          
+          setTimeout(() => {
+            // reset plan status mqtt nextPlan start plan
+            this.resetPlanStatus(nextPlan.machine.id, false, true)
+            setTimeout(() => {
+              this.resetPlanStatus(nextPlan.machine.id, false, false)
+            }, 2000);
+          }, 2100);
           const planStart = moment().format("HH:mm")
           const planEnd = moment(planStart, 'HH:mm').add(nextPlan.total_time_planning, 'minutes').format("HH:mm")
           const noPlanMachine = await this.noPlanMachineService.findAllNoPlanToday(nextPlan.client_id)
@@ -529,18 +530,19 @@ export class PlanningProductionService {
         }
         return `Plan has been Stopped, Activate Next Plan`;
       } else {
-        // reset plan status mqtt nextPlan start plan
-        this.resetPlanStatus(nextPlan.machine.id, false, true)
-        setTimeout(() => {
-          this.resetPlanStatus(nextPlan.machine.id, false, false)
-        }, 2000);
-
         // reset plan status mqtt activePlan stop plan
         this.resetPlanStatus(activePlan.machine.id, true, true, activePlan)
         setTimeout(() => {
           this.resetPlanStatus(activePlan.machine.id, true, false)
         }, 2000);
-
+        
+        setTimeout(() => {
+          // reset plan status mqtt nextPlan start plan
+          this.resetPlanStatus(nextPlan.machine.id, false, true)
+          setTimeout(() => {
+            this.resetPlanStatus(nextPlan.machine.id, false, false)
+          }, 2000);
+        }, 2100);
         // for save last production
         await axios.post(
           `${process.env.SERVICE_PRODUCTION}/production/stopped`,

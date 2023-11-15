@@ -13,8 +13,14 @@ export class ReportShiftController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('report/:machineName')
-  async findAllReport(@Req() req, @Param('machineName') machineName) {
-    return this.reportShiftService.findAllReport( req.user['client'], machineName)
+  async findAllReportMachine(@Req() req, @Param('machineName') machineName) {
+    return this.reportShiftService.findAllReportMachine( req.user['client'], machineName)
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('report')
+  async findAllReport(@Req() req) {
+    return this.reportShiftService.findAllReport( req.user['client'])
   }
 
   @Cron('0 */1 * * * *') // Menjalankan tugas setiap 1 menit

@@ -193,7 +193,7 @@ export class ReportShiftService {
   }
 
   async saveReportIfStop(planning: PlanningProduction) {
-    console.log('run', planning);
+    // console.log('run', planning);
 
     const reportShiftSebelumya = await this.reportShiftRepository.findOne({
       where: {
@@ -204,13 +204,21 @@ export class ReportShiftService {
       planning.client_id,
       moment(planning.date_time_out).format('HH:mm:ss'),
     );
+    // let allReportBefore = await this.reportShiftRepository.createQueryBuilder('reportShift')
+    // .where('DATE(reportShift.created_at) = :date', {date: moment(planning.created_at).format('YYYY-MM-DD')})
+    // .getMany()
 
-    const noPlan = await this.noPlanCount(
-      getShift.no_plan_machine_id.filter(
-        (item) => item.day == moment().format('dddd').toLocaleLowerCase(),
-      ),
-      planning.date_time_out,
-    );
+    // console.log(allReportBefore, 'all');
+    
+    let noPlan = 0
+    if (getShift) {
+      noPlan = await this.noPlanCount(
+        getShift.no_plan_machine_id.filter(
+          (item) => item.day == moment().format('dddd').toLocaleLowerCase(),
+        ),
+        planning.date_time_out,
+      );
+    }
 
     const startTime = moment(getShift.time_start, 'HH:mm:ss');
     const endTime = moment(planning.date_time_out, 'HH:mm:ss');
@@ -220,6 +228,9 @@ export class ReportShiftService {
     const message = await this.initializeMqttClientSpesifikMachine(
       planning.machine.id,
     );
+    const getMessageLS: any = await this.getMessageLS(planning.machine.id)
+    
+    const durationStartNowPlan = moment().diff(moment(planning.date_time_in), 'minute')
 
     const reportShift = new ReportShift();
     reportShift.client_id = planning.client_id;
@@ -238,6 +249,10 @@ export class ReportShiftService {
       ? message['qty_actual'][0] - reportShiftSebelumya.qty_actual
       : message['qty_actual'][0];
     reportShift.planning_id = planning.id;
+    reportShift.availability = ( (durationStartNowPlan - getMessageLS.TotalTime[0] - noPlan) / (durationStartNowPlan - noPlan) )
+    reportShift.performance = ( (planning.product.cycle_time * message['qty_actual'][0]) / 60 ) / (durationStartNowPlan - getMessageLS.TotalTime[0] - noPlan)
+    reportShift.quality = message['qty_actual'][0] / (message['qty_actual'][0] - 0) //emang rumusnya gitu dari adam
+    reportShift.oee =  (reportShift.availability * reportShift.performance * reportShift.quality)
 
     return this.reportShiftRepository.save(reportShift);
   }
@@ -257,21 +272,30 @@ export class ReportShiftService {
       }
 
       if (jamPulang.isBetween(waktuMulai, waktuSelesai)) {
-        totalDurasiDetik += jamPulang.diff(waktuMulai, 'seconds');
+        totalDurasiDetik += jamPulang.diff(waktuMulai, 'minute');
         isJamPulangFound = true; // Menandai bahwa jam pulang sudah ditemukan
       } else {
-        totalDurasiDetik += waktuSelesai.diff(waktuMulai, 'seconds');
+        totalDurasiDetik += waktuSelesai.diff(waktuMulai, 'minute');
       }
     }
 
     return totalDurasiDetik;
   }
 
-  async findAllReport(client, machine) {
+  async findAllReportMachine(client, machine) {
     const reportShift = await this.reportShiftRepository.find({
       where: {
         client_id: client,
         machine_name: machine
+      }
+    })
+    return reportShift
+  }
+
+  async findAllReport(client) {
+    const reportShift = await this.reportShiftRepository.find({
+      where: {
+        client_id: client,
       }
     })
     return reportShift
