@@ -173,10 +173,10 @@ export class ReportShiftService {
       : message['qty_actual'][0];
     // reportShift.qty_actual =  message['qty_actual'][0];
     reportShift.planning_id = planning.id;
-    reportShift.qty_ng = planning.qty_reject;
+    reportShift.qty_ng = message['qtyNg'][0] ?? 0;
     reportShift.availability = ( (durationStartNowPlan - getMessageLS.TotalTime[0]) / durationStartNowPlan )
     reportShift.performance = ( (planning.product.cycle_time * message['qty_actual'][0]) / 60 ) / durationStartNowPlan
-    reportShift.quality = message['qty_actual'][0] / (message['qty_actual'][0] - 0) //emang rumusnya gitu dari adam
+    reportShift.quality = (isNaN(message['qty_actual'][0] / (message['qty_actual'][0])) ? 0 : (message['qty_actual'][0] / (message['qty_actual'][0])) - planning.qty_reject) //emang rumusnya gitu dari adam
     reportShift.oee = (reportShift.availability * reportShift.performance * reportShift.quality)
 
 
@@ -253,7 +253,7 @@ export class ReportShiftService {
     reportShift.qty_ng = planning.qty_reject;
     reportShift.availability = ( (durationStartNowPlan - getMessageLS.TotalTime[0] - noPlan) / (durationStartNowPlan - noPlan) )
     reportShift.performance = ( (planning.product.cycle_time * message['qty_actual'][0]) / 60 ) / (durationStartNowPlan - getMessageLS.TotalTime[0] - noPlan)
-    reportShift.quality = message['qty_actual'][0] / (message['qty_actual'][0] - 0) //emang rumusnya gitu dari adam
+    reportShift.quality = (isNaN(message['qty_actual'][0] / (message['qty_actual'][0])) ? 0 : (message['qty_actual'][0] / (message['qty_actual'][0])) - planning.qty_reject) //emang rumusnya gitu dari adam
     reportShift.oee =  (reportShift.availability * reportShift.performance * reportShift.quality)
 
     return this.reportShiftRepository.save(reportShift);

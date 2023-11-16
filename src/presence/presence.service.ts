@@ -77,7 +77,7 @@ export class PresenceService {
       }
       throw new HttpException("Operator Not Found", HttpStatus.NOT_FOUND);
     }
-    throw new HttpException("Operator Not Found", HttpStatus.NOT_FOUND);
+    throw new HttpException("No plan active with this machine", HttpStatus.BAD_REQUEST);
   }
 
   findAll(query: PaginateQuery, clientId: string) {

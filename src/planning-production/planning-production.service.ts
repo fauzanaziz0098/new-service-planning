@@ -471,6 +471,27 @@ export class PlanningProductionService {
           qty_per_hour: Math.round(qty * 60),
         });
         setTimeout(async () => {
+                //save last data production
+                await axios.post(`${process.env.SERVICE_PRODUCTION}/production/stopped`, {
+                  clientId: activePlan.client_id,
+                  planning_production_id: activePlan.id,
+                  machine: activePlan.machine.id
+                });
+                
+                activePlan.date_time_out = activePlanDateTimeOut;
+                activePlan.qty_per_hour = Math.round(qty * 60);
+                activePlan.total_time_actual = differenceTime;
+                activePlan.qty_reject = qtyNg;
+
+                // save planning production report
+                await this.planningProductionReportService.create(
+                  { planning: activePlan },
+                  token,
+                );
+            
+                // save report shift
+                await this.reportShiftService.saveReportIfStop(activePlan);
+
           // reset plan status mqtt activePlan stop plan
           this.resetPlanStatus(activePlan.machine.id, true, true, activePlan)
           setTimeout(() => {
@@ -530,6 +551,29 @@ export class PlanningProductionService {
         }
         return `Plan has been Stopped, Activate Next Plan`;
       } else {
+            // save last data production
+            await axios.post(`${process.env.SERVICE_PRODUCTION}/production/stopped`, {
+              clientId: activePlan.client_id,
+              planning_production_id: activePlan.id,
+              machine: activePlan.machine.id
+            });
+
+            activePlan.date_time_out = activePlanDateTimeOut;
+            // activePlan.qty_per_hour = parseFloat(qty.toFixed(2));
+            activePlan.qty_per_hour = Math.round(qty * 60);
+            activePlan.total_time_actual = differenceTime;
+            activePlan.qty_reject = qtyNg;
+
+            // save planning produciton report
+            await this.planningProductionReportService.create(
+              { planning: activePlan },
+              token,
+            );
+        
+            // save report shift
+            await this.reportShiftService.saveReportIfStop(activePlan);
+
+
         // reset plan status mqtt activePlan stop plan
         this.resetPlanStatus(activePlan.machine.id, true, true, activePlan)
         setTimeout(() => {
